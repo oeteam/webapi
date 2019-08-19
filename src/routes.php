@@ -15,6 +15,10 @@ return function (App $app) {
 	    $response->getBody()->write("Hello! ,$name");
 	    return $response;
 	});
+
+
 	$app->any('/login', 'App\Controllers\LoginController:index');
+	$app->any('/search', 'App\Controllers\SearchController:index');
+	$app->any('/search/home', 'App\Controllers\SearchController:home');
 };
 
