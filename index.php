@@ -33,5 +33,28 @@ $app->get('/hotels/{hotel_id}', function($request,$response,$args){
       echoResponse($response);
   }
 });
+$app->post('/HotelSearch', 'authenticate',function($request,$response) use ($app) {
+
+  $response = array();
+  // reading post params
+  $input = $request->getParsedBody()['name'];
+  $db = new DbHandler();
+  echoResponse($input);
+ // $res = $db->createUser($name, $email, $password);
+
+  // if ($res == USER_CREATED_SUCCESSFULLY) {
+  //     $response["error"] = false;
+  //     $response["message"] = "You are successfully registered";
+  //     echoResponse(201, $response);
+  // } else if ($res == USER_CREATE_FAILED) {
+  //     $response["error"] = true;
+  //     $response["message"] = "Oops! An error occurred while registereing";
+  //     echoResponse(200, $response);
+  // } else if ($res == USER_ALREADY_EXISTED) {
+  //     $response["error"] = true;
+  //     $response["message"] = "Sorry, this email already existed";
+  //     echoResponse(200, $response);
+  // }
+});
 $app->run();
 ?>
