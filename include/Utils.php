@@ -3,7 +3,7 @@ require('vendor/autoload.php');
 require_once 'Config.php';
 
 // if(PHP_DEBUG_MODE){
-//   error_reporting(-1);
+//   tor_reporting(-1);
 //   ini_set('display_errors', 'On');
 // }
 /**
@@ -27,20 +27,28 @@ function authenticate($request) {
     // validating user
     if (!$db->isValidUser($username,$password)) {
       //user is not present in users table
-      $response['error'] = true;
+      $response['success'] = true;
       $response['message'] = 'Access denied. Invalid User';
       echoResponse($response);
       //$app->stop();
     } else {
-      global $session_id;
+      return true;
+      // global $session_id;
       // get user details
-      $session_id = 1234788;
+      // $session_id = 1234788;
     }
-  } else if(!isset($username) || $username=='') {
+  } else if($username=='' && $password=='') {
+      $response["success"] = false;
+      $response['message'] = "Username & Password is mandatory";
+      echoResponse($response);
+      //$app->stop();
+  } else if(isset($username) || $username=='') {
+      $response["success"] = false;
       $response['message'] = "Username is mandatory";
       echoResponse($response);
       //$app->stop();
-  } else if($password=='') {
+  } else if(isset($password) || $password=='') {
+      $response["success"] = false;
       $response['message'] = "Password is mandatory";
       echoResponse($response);
       //$app->stop();

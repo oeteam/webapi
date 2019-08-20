@@ -21,7 +21,7 @@ $app->get('/hotels/{hotel_id}', function($request,$response,$args){
   $db = new DbHandler();
   $headers = $request->getHeaders();
   if (!isset($headers['HTTP_USERNAME'][0])) {
-     $response["success"] = true;
+     $response["success"] = false;
      $response["message"] = "The requested resource doesn't exists";
      echoResponse($response);
      exit();
@@ -31,13 +31,13 @@ $app->get('/hotels/{hotel_id}', function($request,$response,$args){
 
   $result = $db->getHotelDetails($args['hotel_id']);
   if ($result != NULL) {
-      $response["success"] = false;
+      $response["success"] = true;
       $response["id"] = $result["id"];
       $response["hotel_name"] = $result["hotel_name"];
       $response["location"] = $result["location"];
       echoResponse($response);
   } else {
-      $response["success"] = true;
+      $response["success"] = false;
       $response["message"] = "The requested resource doesn't exists";
       echoResponse($response);
   }
@@ -48,7 +48,7 @@ $app->post('/HotelSearch', 'authenticate',function($request,$response) use ($app
   // reading post params
   $input = $request->getParsedBody()['name'];
   $db = new DbHandler();
-  echoResponse($input);
+  echoResponse($response);
  // $res = $db->createUser($name, $email, $password);
 
   // if ($res == USER_CREATED_SUCCESSFULLY) {
