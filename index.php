@@ -58,7 +58,12 @@ $app->post('/HotelSearch',function($request,$response) {
        $data['session_id'] = $result['session_id'];
        $data['provider_id'] = $result['provider_id'];
        $res = $db->addSearchDetails($data);
-       echoResponse($res);
+       $response['status']['status'] = "success";
+       $response['status']['description'] = "Hotel Search is Successfull";
+       $response['status']['Session ID'] = $result['session_id'];
+       echoResponse($response);
+    } else {
+      echoResponse($validation);
     }
   } else {
     echoResponse($result);
