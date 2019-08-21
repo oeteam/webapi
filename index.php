@@ -43,7 +43,6 @@ $app->get('/hotels/{hotel_id}', function($request,$response,$args){
   }
 });
 $app->post('/HotelSearch', 'authenticate',function($request,$response) use ($app) {
-
   $response = array();
   // reading post params
   $input = $request->getParsedBody()['name'];
@@ -65,5 +64,54 @@ $app->post('/HotelSearch', 'authenticate',function($request,$response) use ($app
   //     echoResponse(200, $response);
   // }
 });
+$app->post('/HotelSearch2',function($request,$response) {
+  $response = array();
+  $result = authenticate_user($request);
+  if($result=="true") {
+    // reading post params
+    $input = $request->getParsedBody()['name'];
+    $db = new DbHandler();
+    echoResponse($input);
+  } else {
+    echoResponse($result);
+  }
+});
+function authenticate_user($request) {
+  // getting request header
+  $username = $request->getHeaderLine('username');
+  $password = $request->getHeaderLine('password');
+  $response = array();
+  $app = new \Slim\App();
+  // verifying authorization header
+  if(isset($username) && $username!='' && isset($password) && $password!='') {
+    $db = new DbHandler();
+    // validating user
+    if (!$db->isValidUser($username,$password)) {
+      //user is not present in users table
+      $response['success'] = true;
+      $response['message'] = 'Access denied. Invalid User';
+      return $response;
+     // echoResponse($response);
+      //$app->stop();
+    } else {
+      return true;
+    }
+  } else if($username=='' && $password=='') {
+      $response["success"] = false;
+      $response['message'] = "Username & Password is mandatory";
+      return $response;
+      //$app->stop();
+  } else if(isset($username) || $username=='') {
+      $response["success"] = false;
+      $response['message'] = "Username is mandatory";
+      return $response;
+      //$app->stop();
+  } else if(isset($password) || $password=='') {
+      $response["success"] = false;
+      $response['message'] = "Password is mandatory";
+      return $response;
+      //$app->stop();
+  }
+}
 $app->run();
 ?>
