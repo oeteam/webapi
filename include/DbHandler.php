@@ -44,9 +44,6 @@ class DbHandler {
         if(!isset($data['location']) || $data['location'] == '') {
             $response['location_error'] = 'Location is mandatory';
         }
-        if(!isset($data['citycode']) || $data['citycode'] == '') {
-            $response['citycode_error'] = 'City Code is mandatory';
-        }
         if(!isset($data['cityname']) || $data['cityname'] == '') {
             $response['cityname_error'] = 'City name is mandatory';
         }
@@ -88,6 +85,101 @@ class DbHandler {
             $response['status'] = "error";
         }
         return $response;
+    }
+    public function addSearchDetails($data) {
+        $room1childAge = "";
+        $room2childAge = "";
+        $room3childAge = "";
+        $room4childAge = "";
+        $room5childAge = "";
+        $room6childAge = "";
+        $room7childAge = "";
+        $room8childAge = "";
+        $room9childAge = "";
+        $room10childAge = "";
+        $Room1Adults = "";
+        $Room2Adults = "";
+        $Room3Adults = "";
+        $Room4Adults = "";
+        $Room5Adults = "";
+        $Room6Adults = "";
+        $Room1Child = "";
+        $Room2Child = "";
+        $Room3Child = "";
+        $Room4Child = "";
+        $Room5Child = "";
+        $Room6Child = "";
+        if (isset($data['room1-childAge'])) {
+          $room1childAge = implode(",", $data['room1-childAge']);
+        }
+        if (isset($data['room2-childAge'])) {
+          $room2childAge = implode(",", $data['room2-childAge']);
+        }
+        if (isset($data['room3-childAge'])) {
+          $room3childAge = implode(",", $data['room3-childAge']);
+        }
+        if (isset($data['room4-childAge'])) {
+          $room4childAge = implode(",", $data['room4-childAge']);
+        }
+        if (isset($data['room5-childAge'])) {
+          $room5childAge = implode(",", $data['room5-childAge']);
+        }
+        if (isset($data['room6-childAge'])) {
+          $room6childAge = implode(",", $data['room6-childAge']);
+        }
+        if (isset($data['adults'][0])) {
+          $Room1Adults = $data['adults'][0];
+        }
+        if (isset($data['adults'][1])) {
+          $Room2Adults = $data['adults'][1];
+        }
+        if (isset($data['adults'][2])) {
+          $Room3Adults = $data['adults'][2];
+        }
+        if (isset($data['adults'][3])) {
+          $Room4Adults = $data['adults'][3];
+        }
+        if (isset($data['adults'][4])) {
+          $Room5Adults = $data['adults'][4];
+        }
+        if (isset($data['adults'][5])) {
+          $Room6Adults = $data['adults'][5];
+        }
+        if (isset($data['child'][0])) {
+          $Room1Child = $data['child'][0];
+        }
+        if (isset($data['child'][1])) {
+          $Room2Child = $data['child'][1];
+        }
+        if (isset($data['child'][2])) {
+          $Room3Child = $data['child'][2];
+        }
+        if (isset($data['child'][3])) {
+          $Room4Child = $data['child'][3];
+        }
+        if (isset($data['child'][4])) {
+          $Room5Child = $data['child'][4];
+        }
+        if (isset($data['child'][5])) {
+          $Room4Child = $data['child'][5];
+        }
+        if (isset($data['hotel_name'])) {
+          $hotelname = $data['hotel_name'];
+        } else {
+            $hotelname = "";
+        }
+        $stmt = $this->conn->prepare("INSERT INTO api_tbl_search(location,city,country,nationality,check_in,check_out,nights,hotel_name,adults,child,searchDate,providerId,Room1ChildAge,Room2ChildAge,Room3ChildAge,Room4ChildAge,Room5ChildAge,Room6ChildAge,noRooms,Room1Adults,Room2Adults,Room3Adults,Room4Adults,Room5Adults,Room6Adults,Room1Child,Room2Child,Room3Child,Room4Child,Room5Child,Room6Child,sessionId)values('".$data['location']."', '".$data['cityname']."', '".$data['countryname']."', '".$data['nationality']."','".$data['check_in']."', '".$data['check_out']."','".$data['nights']."', '".$hotelname."', '".array_sum($data['adults'])."', '".array_sum($data['child'])."', '".date('Y-m-d')."', '".$data['provider_id']."', '".$room1childAge."', '".$room2childAge."', '".$room3childAge."', '".$room4childAge."', '".$room5childAge."', '".$room6childAge."', '".$data['no_of_rooms']."', '".$Room1Adults."','".$Room2Adults."','".$Room3Adults."', '".$Room4Adults."', '".$Room5Adults."','".$Room6Adults."','".$Room1Child."', '".$Room2Child."', '".$Room3Child."','".$Room4Child."', '".$Room5Child."', '".$Room6Child."','".$data['session_id']."')");
+        $result = $stmt->execute();
+
+        //$stmt->close();
+        // Check for successful insertion
+        if ($result) {
+            // data successfully inserted
+            return true;
+        } else {
+            // Failed to insert
+            return false;
+        }
     }
 }
 ?>

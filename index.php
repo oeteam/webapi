@@ -49,7 +49,17 @@ $app->post('/HotelSearch',function($request,$response) {
   if(isset($result['session_id']) && $result['success']==true) {
     // validating post params
     $validation = $db->validateparameters($request->getParsedBody());
-    echoResponse($validation);
+    if($validation['status']=="success") {
+       $data = $request->getParsedBody();
+       $checkin_date=date_create($data['check_in']);
+       $checkout_date=date_create($data['check_out']);
+       $no_of_days=date_diff($checkin_date,$checkout_date);
+       $data['nights'] = $no_of_days->format("%a");
+       $data['session_id'] = $result['session_id'];
+       $data['provider_id'] = $result['provider_id'];
+       $res = $db->addSearchDetails($data);
+       echoResponse($res);
+    }
   } else {
     echoResponse($result);
   }
@@ -73,6 +83,7 @@ function authenticate_user($request) {
       $userdetails = $db->getuserdetails($username,$password);
       $response['success'] = true;
       $response['session_id'] = date('YmdHis').$username.$userdetails['provider_id'];
+      $response['provider_id'] = $userdetails['provider_id'];
       return $response;
     }
   } else if($username=='' && $password=='') {
