@@ -87,7 +87,7 @@ function authenticate_user($request) {
     } else {
       $userdetails = $db->getuserdetails($username,$password);
       $response['success'] = true;
-      $response['session_id'] = date('YmdHis').$username.$userdetails['provider_id'];
+      $response['session_id'] = md5(date('YmdHis').$username.$userdetails['provider_id']);
       $response['provider_id'] = $userdetails['provider_id'];
       return $response;
     }
