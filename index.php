@@ -42,36 +42,14 @@ $app->get('/hotels/{hotel_id}', function($request,$response,$args){
       echoResponse($response);
   }
 });
-$app->post('/HotelSearch', 'authenticate',function($request,$response) use ($app) {
+$app->post('/HotelSearch',function($request,$response) {
   $response = array();
-  // reading post params
-  $input = $request->getParsedBody()['name'];
   $db = new DbHandler();
-  echoResponse($response);
- // $res = $db->createUser($name, $email, $password);
-
-  // if ($res == USER_CREATED_SUCCESSFULLY) {
-  //     $response["error"] = false;
-  //     $response["message"] = "You are successfully registered";
-  //     echoResponse(201, $response);
-  // } else if ($res == USER_CREATE_FAILED) {
-  //     $response["error"] = true;
-  //     $response["message"] = "Oops! An error occurred while registereing";
-  //     echoResponse(200, $response);
-  // } else if ($res == USER_ALREADY_EXISTED) {
-  //     $response["error"] = true;
-  //     $response["message"] = "Sorry, this email already existed";
-  //     echoResponse(200, $response);
-  // }
-});
-$app->post('/HotelSearch2',function($request,$response) {
-  $response = array();
   $result = authenticate_user($request);
-  if($result=="true") {
-    // reading post params
-    $input = $request->getParsedBody()['name'];
-    $db = new DbHandler();
-    echoResponse($input);
+  if(isset($result['session_id']) && $result['success']==true) {
+    // validating post params
+    $validation = $db->validateparameters($request->getParsedBody());
+    echoResponse($validation);
   } else {
     echoResponse($result);
   }
@@ -82,35 +60,33 @@ function authenticate_user($request) {
   $password = $request->getHeaderLine('password');
   $response = array();
   $app = new \Slim\App();
+  $db = new DbHandler();
   // verifying authorization header
   if(isset($username) && $username!='' && isset($password) && $password!='') {
-    $db = new DbHandler();
     // validating user
     if (!$db->isValidUser($username,$password)) {
       //user is not present in users table
-      $response['success'] = true;
+      $response['success'] = false;
       $response['message'] = 'Access denied. Invalid User';
       return $response;
-     // echoResponse($response);
-      //$app->stop();
     } else {
-      return true;
+      $userdetails = $db->getuserdetails($username,$password);
+      $response['success'] = true;
+      $response['session_id'] = date('YmdHis').$username.$userdetails['provider_id'];
+      return $response;
     }
   } else if($username=='' && $password=='') {
       $response["success"] = false;
       $response['message'] = "Username & Password is mandatory";
       return $response;
-      //$app->stop();
   } else if(isset($username) || $username=='') {
       $response["success"] = false;
       $response['message'] = "Username is mandatory";
       return $response;
-      //$app->stop();
   } else if(isset($password) || $password=='') {
       $response["success"] = false;
       $response['message'] = "Password is mandatory";
       return $response;
-      //$app->stop();
   }
 }
 $app->run();
