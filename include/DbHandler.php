@@ -40,7 +40,7 @@ class DbHandler {
         }
     }
     public function validateparameters($data) {
-        $response = true;
+        $response = array();
         if(!isset($data['location']) || $data['location'] == '') {
             $response['location_error'] = 'Location is mandatory';
         }
@@ -81,6 +81,11 @@ class DbHandler {
                     }
                 }
             }
+        }
+        if(empty($response)) {
+            $response['status'] = "success";
+        } else {
+            $response['status'] = "error";
         }
         return $response;
     }
