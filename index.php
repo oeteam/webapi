@@ -96,7 +96,9 @@ $app->post('/AvailableHotelRooms',function($request,$response) {
           }
         }
        $response['status']['status'] = "success";
-       $response['status']['result'] = $rooms;
+       for ($i=0; $i < $searchdet['noRooms']; $i++) {
+          $response['status']['result']['room'.($i+1)] = $rooms[$i];
+        }
        echoResponse($response);
     } else {
       echoResponse($validation);
