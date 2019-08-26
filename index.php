@@ -46,7 +46,8 @@ $app->post('/HotelSearch',function($request,$response) {
   $response = array();
   $db = new DbHandler();
   $result = authenticate_user($request);
-  if(isset($result['session_id']) && $result['success']==true) {
+  if($result['success']==true) {
+     $session_id = md5(date('YmdHis').$result['username'].$result['provider_id']);
     // validating post params
     $validation = $db->validateparameters($request->getParsedBody());
     if($validation['status']=="success") {
@@ -55,12 +56,47 @@ $app->post('/HotelSearch',function($request,$response) {
        $checkout_date=date_create($data['check_out']);
        $no_of_days=date_diff($checkin_date,$checkout_date);
        $data['nights'] = $no_of_days->format("%a");
-       $data['session_id'] = $result['session_id'];
+       $data['session_id'] = $session_id;
        $data['provider_id'] = $result['provider_id'];
        $res = $db->addSearchDetails($data);
        $response['status']['status'] = "success";
        $response['status']['description'] = "Hotel Search is Successfull";
-       $response['status']['Session ID'] = $result['session_id'];
+       $response['status']['Session ID'] = $session_id;
+       echoResponse($response);
+    } else {
+      echoResponse($validation);
+    }
+  } else {
+    echoResponse($result);
+  }
+});
+$app->post('/AvailableHotelRooms',function($request,$response) {
+  $response = array();
+  $db = new DbHandler();
+  $result = authenticate_user($request);
+  if($result['success']==true) {
+    // validating post params
+    $validation = $db->validateparametersavailablerooms($request->getParsedBody());
+    if($validation['status']=="success") {
+        $details = $request->getParsedBody();
+        $data['view'] = $db->getHotelDetails($details['hotelcode']);
+        $hotel_facilities = explode(",",$data['view']['hotel_facilities']); 
+        foreach ($hotel_facilities as $key => $value) {
+          $data['hotel_facilities'][$key] = $db->hotel_facilities_data($value);
+        }
+        $room_facilities = explode(",",$data['view']['room_facilities']); 
+        foreach ($room_facilities as $key => $value) {
+          $data['room_facilities'][$key] = $db->room_facilities_data($value);
+        } 
+        $searchdet = $db->getSearchDetails($details['session_id']);
+        $contracts = $db->contractChecking($searchdet,$details['hotelcode']);
+        if ($contracts!=false) {
+          for ($i=0; $i < $searchdet['noRooms']; $i++) { 
+            $rooms[$i] = $db->roomwisepaxdata($details['hotelcode'],$i,$searchdet,$contracts['contract_id']);
+          }
+        }
+       $response['status']['status'] = "success";
+       $response['status']['result'] = $rooms;
        echoResponse($response);
     } else {
       echoResponse($validation);
@@ -87,7 +123,7 @@ function authenticate_user($request) {
     } else {
       $userdetails = $db->getuserdetails($username,$password);
       $response['success'] = true;
-      $response['session_id'] = md5(date('YmdHis').$username.$userdetails['provider_id']);
+      $response['username'] = $username;
       $response['provider_id'] = $userdetails['provider_id'];
       return $response;
     }
