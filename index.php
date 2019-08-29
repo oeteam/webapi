@@ -137,6 +137,10 @@ $app->post('/BookingReview',function($request,$response) {
         $viwedate2 = date("d/m/Y", strtotime(isset($searchdet['check_out']) ? $searchdet['check_out'] : ''));
         $response['status']['result']['Checkin']= $viwedate1;
         $response['status']['result']['Checkout']= $viwedate2;
+        $response['status']['result']['Adults']= $searchdet['adults'];
+        $response['status']['result']['Child']= $searchdet['child'];
+        $response['status']['result']['no_of_rooms']= $searchdet['noRooms'];
+        $response['status']['result']['no_of_days']=  $tot_days;
         for ($i=0; $i < $searchdet['noRooms']; $i++) { 
           $roomindex = explode('-',$details['room'][$i]);
           $roomid[$i] = $roomindex[1];
