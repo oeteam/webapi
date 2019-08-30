@@ -237,8 +237,7 @@ class DbHandler {
         // Contract Check start
         $contract_id = array();
         $count = array();
-        $stmt = $this->conn->prepare("SELECT contract_id,(select SUM(amount) from hotel_tbl_allotement where 
-        contract_id = a.contract_id AND hotel_id = a.hotel_id AND from_date <= '".date('Y-m-d',strtotime($searchdet['check_in']))."' AND to_date > '".date('Y-m-d',strtotime($searchdet['check_in']))."' AND  from_date < '".date('Y-m-d',strtotime($searchdet['check_out']))."' AND to_date >= '".date('Y-m-d',strtotime($searchdet['check_out']))."') as price FROM hotel_tbl_contract a WHERE from_date <= '".date('Y-m-d',strtotime($searchdet['check_in']))."' AND to_date >= '".date('Y-m-d',strtotime($searchdet['check_in']))."' AND  from_date < '".date('Y-m-d',strtotime($searchdet['check_out']. ' -1 days'))."' AND to_date >= '".date('Y-m-d',strtotime($searchdet['check_out']. ' -1 days'))."'  AND hotel_id = '".$hotelid."' AND contract_flg  = 1 order by price asc");
+        $stmt = $this->conn->prepare("SELECT contract_id FROM hotel_tbl_contract a WHERE  FIND_IN_SET('".$searchdet['nationality']."', IFNULL(nationalityPermission,'')) = 0 AND from_date <= '".date('Y-m-d',strtotime($searchdet['check_in']))."' AND to_date >= '".date('Y-m-d',strtotime($searchdet['check_in']))."' AND  from_date < '".date('Y-m-d',strtotime($searchdet['check_out']. ' -1 days'))."' AND to_date >= '".date('Y-m-d',strtotime($searchdet['check_out']. ' -1 days'))."'  AND hotel_id = '".$hotelid."' AND contract_flg  = 1");
         if ($stmt->execute()) {
             $tmp = $stmt->get_result();
             $stmt->close();
@@ -278,8 +277,6 @@ class DbHandler {
       $no_of_days=date_diff($checkin_date,$checkout_date);
       $tot_days = $no_of_days->format("%a");
       $bookDate = date_create(date('Y-m-d'));
-      $Bkbeforeno_of_days=date_diff($bookDate,$checkin_date);
-      $Bkbefore = $Bkbeforeno_of_days->format("%a");
 
       for($i = 0; $i < $tot_days; $i++) {
         $dateAlt[$i] = date('Y-m-d', strtotime($start_date. ' + '.$i.'  days'));
@@ -292,17 +289,17 @@ class DbHandler {
       $RoomChildAge3 = 0; 
       $RoomChildAge4 = 0; 
 
-      if (isset($searchdet['Room'.($key+1).'-ChildAge'][0])) {
-        $RoomChildAge1 = $searchdet['Room'.($key+1).'-ChildAge'][0]; 
+      if (isset($searchdet['Room'.($key+1).'ChildAge'][0])) {
+        $RoomChildAge1 = $searchdet['Room'.($key+1).'ChildAge'][0]; 
       }
-      if (isset($searchdet['Room'.($key+1).'-ChildAge'][1])) {
-        $RoomChildAge2 = $searchdet['Room'.($key+1).'-ChildAge'][1]; 
+      if (isset($searchdet['Room'.($key+1).'ChildAge'][1])) {
+        $RoomChildAge2 = $searchdet['Room'.($key+1).'ChildAge'][1]; 
       }
-      if (isset($searchdet['Room'.($key+1).'-ChildAge'][2])) {
-        $RoomChildAge3 = $searchdet['Room'.($key+1).'-ChildAge'][2]; 
+      if (isset($searchdet['Room'.($key+1).'ChildAge'][2])) {
+        $RoomChildAge3 = $searchdet['Room'.($key+1).'ChildAge'][2]; 
       }
-      if (isset($searchdet['Room'.($key+1).'-ChildAge'][3])) {
-        $RoomChildAge4 = $searchdet['Room'.($key+1).'-ChildAge'][3]; 
+      if (isset($searchdet['Room'.($key+1).'ChildAge'][3])) {
+        $RoomChildAge4 = $searchdet['Room'.($key+1).'ChildAge'][3]; 
       }
 
       $markup = 0;
@@ -315,23 +312,30 @@ class DbHandler {
         IF(sum(exChildAmount)!=0,'Child Extrabed','') as extraChildLabel,IF(sum(boardChildAmount)!=0,'Child supplements','') as boardChildLabel 
          FROM (
          SELECT *,
-      IF(extrabed!=0,IF(StayExbed=0,extrabed-(extrabed*exdis/100), extrabed),0) as exAmount,
+      IF(extrabed!=0,IF(StayExbed=1,extrabed,extrabed-(extrabed*exdis/100)),0) as exAmount,
       IF(StayExbed=1,
       IF(extrabedChild=0,0,extrabedChild) ,(IF(extrabedChild=0,0,extrabedChild)- IF(extrabedChild=0,0,extrabedChild)*exdis/100)) as exChildAmount ,
       IF(StayBoard=1,
       IF(extrabedChild=0,extrabedChild1,0) ,(IF(extrabedChild=0,extrabedChild1,0)- IF(extrabedChild=0,extrabedChild1,0)*boarddis/100)) as boardChildAmount,
-      IF(generalsub!=0,IF(StayGeneral=0,generalsub-(generalsub*generaldis/100), generalsub),0) as generalsubAmount
+      IF(generalsub!=0,IF(StayGeneral=1, generalsub,generalsub-(generalsub*generaldis/100)),0) as generalsubAmount
 
       FROM (select con.board,CONCAT(f.room_name,' ',g.Room_Type) as RoomName,a.hotel_id,a.contract_id,a.room_id,a.allotement as allotment, a.amount as TtlPrice1,dis.discount_type,dis.Extrabed as StayExbed,dis.General as StayGeneral,dis.Board as StayBoard,IF(dis.stay_night!='',(dis.pay_night*ceil(".$tot_days."/dis.stay_night))+(".$tot_days."-(dis.stay_night*ceil(".$tot_days."/dis.stay_night))),0) as fday ,CONCAT(con.contract_id,'-',a.room_id) as RoomIndex, rev.ExtrabedMarkup,rev.ExtrabedMarkuptype,
 
         ((a.amount+(a.amount*".$markup."/100)+IF(rev.Markup!='',IF(rev.Markuptype='Percentage',(a.amount*rev.Markup/100),(rev.Markup)), (a.amount*".$general_markup."/100)))
         - (a.amount+(a.amount*".$markup."/100)+IF(rev.Markup!='',IF(rev.Markuptype='Percentage',(a.amount*rev.Markup/100),(rev.Markup)), (a.amount*".$general_markup."/100)))*
 
-       ((select IF(min(discount)!='',discount,(select IF(min(discount)!='',discount,0) from hoteldiscount where Discount_flag = 1 AND FIND_IN_SET(a.hotel_id ,hotelid) > 0 
-      AND FIND_IN_SET(a.room_id,room) > 0 AND FIND_IN_SET(a.contract_id,contract) > 0 AND (Styfrom <= a.allotement_date AND Styto >= a.allotement_date AND discount_type = 'REB') AND Bkbefore < ".$Bkbefore." AND FIND_IN_SET(a.allotement_date,BlackOut)=0 limit 1)) from hoteldiscount where Discount_flag = 1 AND FIND_IN_SET(a.hotel_id ,hotelid) > 0 
-      AND FIND_IN_SET(a.room_id,room) > 0 AND FIND_IN_SET(a.contract_id,contract) > 0 AND (Styfrom <= a.allotement_date AND Styto >= a.allotement_date AND BkFrom <= '".date('Y-m-d')."' AND BkTo >= '".date('Y-m-d')."') AND Bkbefore < ".$Bkbefore." AND FIND_IN_SET(a.allotement_date,BlackOut)=0 limit 1)/100)
+         ((SELECT IF(min(discount)!='',discount,0) FROM `hoteldiscount` where
+        Discount_flag = 1 AND FIND_IN_SET(a.hotel_id ,hotelid) > 0 
+         AND FIND_IN_SET(a.room_id,room) > 0 
+         AND FIND_IN_SET(a.contract_id,contract) > 0 
+         AND ((Styfrom <= a.allotement_date AND Styto >= a.allotement_date  AND  BkFrom <= '".date('Y-m-d')."' AND BkTo >= '".date('Y-m-d')."' 
+          AND Bkbefore <  DATEDIFF(a.allotement_date,'".date('Y-m-d')."') AND numofnights <= ".$tot_days." AND discount_type = 'MLOS')  OR (Styfrom <= a.allotement_date AND Styto >= a.allotement_date  AND  BkFrom <= '".date('Y-m-d')."' AND BkTo >= '".date('Y-m-d')."' 
+          AND Bkbefore < DATEDIFF(a.allotement_date,'".date('Y-m-d')."')  AND discount_type = '') OR (Styfrom <= a.allotement_date AND Styto >= a.allotement_date  AND  BkFrom <= '".date('Y-m-d')."' AND BkTo >= '".date('Y-m-d')."' AND discount_type = 'EB')
+          OR (Styfrom <= a.allotement_date AND Styto >= a.allotement_date  AND  BkFrom <= '".date('Y-m-d')."' AND BkTo >= '".date('Y-m-d')."' 
+          AND Bkbefore < DATEDIFF(a.allotement_date,'".date('Y-m-d')."')  AND discount_type = 'REB') 
+        ) limit 1)/100)
          ) as TtlPrice,
-        (select IF(count(*)!=0,IF(ExtrabedMarkup!='',IF(ExtrabedMarkuptype='Percentage',amount+(amount*ExtrabedMarkup/100),amount+ExtrabedMarkup),amount),0) from hotel_tbl_extrabed where a.allotement_date BETWEEN from_date AND to_date AND contract_id = a.contract_id AND hotel_id = a.hotel_id AND FIND_IN_SET(a.room_id, IFNULL(roomType,'')) > 0 AND 
+        (select IF(count(*)!=0,IF(ExtrabedMarkup!='',IF(ExtrabedMarkuptype='Percentage',amount+(amount*ExtrabedMarkup/100)+(amount*".$markup."/100),amount+ExtrabedMarkup+(amount*".$markup."/100)),amount+(sum(amount)*".($markup+$general_markup)."/100)),0) from hotel_tbl_extrabed where a.allotement_date BETWEEN from_date AND to_date AND contract_id = a.contract_id AND hotel_id = a.hotel_id AND FIND_IN_SET(a.room_id, IFNULL(roomType,'')) > 0 AND 
             ".$data['Room'.($key+1).'Adults']." > f.standard_capacity ) as extrabed, 
 
         (select IF(count(*)=0,'',IF(0=".$RoomChildAge1.",0,IF(ChildAgeFrom < ".$RoomChildAge1.",IF(ExtrabedMarkup!='' && ChildAmount!=0,IF(ExtrabedMarkuptype='Percentage',ChildAmount+(ChildAmount*ExtrabedMarkup/100), ChildAmount+ExtrabedMarkup) ,ChildAmount+(ChildAmount*".$general_markup."/100))+(ChildAmount*".$markup."/100),0))) from hotel_tbl_extrabed where a.allotement_date BETWEEN from_date AND to_date AND contract_id = a.contract_id AND hotel_id = a.hotel_id AND FIND_IN_SET(a.room_id, IFNULL(roomType,'')) > 0 AND ".($data['Room'.($key+1).'Adults']+$data['Room'.($key+1).'Child'])." > f.standard_capacity) as extrabedChild, 
@@ -352,26 +356,20 @@ class DbHandler {
 
          from hotel_tbl_generalsupplement where a.allotement_date BETWEEN fromDate AND toDate AND contract_id = a.contract_id AND hotel_id = a.hotel_id AND FIND_IN_SET(a.room_id, IFNULL(roomType,'')) > 0 AND  mandatory = 1) as generalsub, 
 
-      (select IF(min(discount)!='',discount,(select IF(min(discount)!='',discount,0) from hoteldiscount where Discount_flag = 1 
-      AND FIND_IN_SET(a.hotel_id ,hotelid) > 0 AND FIND_IN_SET(a.room_id,room) > 0 AND FIND_IN_SET(a.contract_id,contract) > 0 AND (Styfrom <= a.allotement_date AND Styto >= a.allotement_date AND discount_type = 'REB') AND Extrabed = 1 AND FIND_IN_SET(a.allotement_date,BlackOut)=0 limit 1)) from hoteldiscount where Discount_flag = 1 
-      AND FIND_IN_SET(a.hotel_id ,hotelid) > 0 AND FIND_IN_SET(a.room_id,room) > 0 AND FIND_IN_SET(a.contract_id,contract) > 0 AND (Styfrom <= a.allotement_date AND Styto >= a.allotement_date AND BkFrom <= '".date('Y-m-d')."' AND BkTo >= '".date('Y-m-d')."') AND Extrabed = 1 AND FIND_IN_SET(a.allotement_date,BlackOut)=0 limit 1) as exdis,
+      (SELECT IF(min(discount)!='',discount,0) FROM `hoteldiscount` where Discount_flag = 1 AND Extrabed = 1 AND FIND_IN_SET(a.hotel_id ,hotelid) > 0  AND FIND_IN_SET(a.room_id,room) > 0  AND FIND_IN_SET(a.contract_id,contract) > 0 AND ((Styfrom <= a.allotement_date AND Styto >= a.allotement_date  AND  BkFrom <= '".date('Y-m-d')."' AND BkTo >= '".date('Y-m-d')."'  AND Bkbefore < DATEDIFF(a.allotement_date,'".date('Y-m-d')."') AND numofnights <= ".$tot_days." AND discount_type = 'MLOS')  OR (Styfrom <= a.allotement_date AND Styto >= a.allotement_date  AND  BkFrom <= '".date('Y-m-d')."' AND BkTo >= '".date('Y-m-d')."' AND Bkbefore < DATEDIFF(a.allotement_date,'".date('Y-m-d')."')  AND discount_type = '') OR (Styfrom <= a.allotement_date AND Styto >= a.allotement_date  AND  BkFrom <= '".date('Y-m-d')."' AND BkTo >= '".date('Y-m-d')."' AND discount_type = 'EB') OR (Styfrom <= a.allotement_date AND Styto >= a.allotement_date  AND  BkFrom <= '".date('Y-m-d')."' AND BkTo >= '".date('Y-m-d')."'  AND Bkbefore < DATEDIFF(a.allotement_date,'".date('Y-m-d')."')  AND discount_type = 'REB')) limit 1) as exdis,
 
-       (select IF(min(discount)!='',discount,(select IF(min(discount)!='',discount,0) from hoteldiscount where Discount_flag = 1 
-      AND FIND_IN_SET(a.hotel_id ,hotelid) > 0 AND FIND_IN_SET(a.room_id,room) > 0 AND FIND_IN_SET(a.contract_id,contract) > 0 AND (Styfrom <= a.allotement_date AND Styto >= a.allotement_date AND discount_type = 'REB') AND Board = 1 AND FIND_IN_SET(a.allotement_date,BlackOut)=0 limit 1)) from hoteldiscount where Discount_flag = 1 
-      AND FIND_IN_SET(a.hotel_id ,hotelid) > 0 AND FIND_IN_SET(a.room_id,room) > 0 AND FIND_IN_SET(a.contract_id,contract) > 0 AND (Styfrom <= a.allotement_date AND Styto >= a.allotement_date AND discount_type = 'REB') AND Board = 1 AND FIND_IN_SET(a.allotement_date,BlackOut)=0 limit 1) as boarddis,
+         (SELECT IF(min(discount)!='',discount,0) FROM `hoteldiscount` where Discount_flag = 1 AND Board = 1 AND FIND_IN_SET(a.hotel_id ,hotelid) > 0  AND FIND_IN_SET(a.room_id,room) > 0  AND FIND_IN_SET(a.contract_id,contract) > 0 AND ((Styfrom <= a.allotement_date AND Styto >= a.allotement_date  AND  BkFrom <= '".date('Y-m-d')."' AND BkTo >= '".date('Y-m-d')."'  AND Bkbefore < DATEDIFF(a.allotement_date,'".date('Y-m-d')."') AND numofnights <= ".$tot_days." AND discount_type = 'MLOS')  OR (Styfrom <= a.allotement_date AND Styto >= a.allotement_date  AND  BkFrom <= '".date('Y-m-d')."' AND BkTo >= '".date('Y-m-d')."' AND Bkbefore < DATEDIFF(a.allotement_date,'".date('Y-m-d')."')  AND discount_type = '') OR (Styfrom <= a.allotement_date AND Styto >= a.allotement_date  AND  BkFrom <= '".date('Y-m-d')."' AND BkTo >= '".date('Y-m-d')."' AND discount_type = 'EB') OR (Styfrom <= a.allotement_date AND Styto >= a.allotement_date  AND  BkFrom <= '".date('Y-m-d')."' AND BkTo >= '".date('Y-m-d')."'  AND Bkbefore < DATEDIFF(a.allotement_date,'".date('Y-m-d')."')  AND discount_type = 'REB')) limit 1) as boarddis,
 
-      (select IF(min(discount)!='',discount,(select IF(min(discount)!='',discount,0) from hoteldiscount where Discount_flag = 1 
-      AND FIND_IN_SET(a.hotel_id ,hotelid) > 0 AND FIND_IN_SET(a.room_id,room) > 0 AND FIND_IN_SET(a.contract_id,contract) > 0 AND (Styfrom <= a.allotement_date AND Styto >= a.allotement_date AND discount_type = 'REB') AND General = 1 AND FIND_IN_SET(a.allotement_date,BlackOut)=0 limit 1)) from hoteldiscount where Discount_flag = 1 
-      AND FIND_IN_SET(a.hotel_id ,hotelid) > 0 AND FIND_IN_SET(a.room_id,room) > 0 AND FIND_IN_SET(a.contract_id,contract) > 0 AND (Styfrom <= a.allotement_date AND Styto >= a.allotement_date AND discount_type = 'REB') AND General = 1 AND FIND_IN_SET(a.allotement_date,BlackOut)=0 limit 1) as generaldis
+         (SELECT IF(min(discount)!='',discount,0) FROM `hoteldiscount` where Discount_flag = 1 AND General = 1 AND FIND_IN_SET(a.hotel_id ,hotelid) > 0  AND FIND_IN_SET(a.room_id,room) > 0  AND FIND_IN_SET(a.contract_id,contract) > 0 AND ((Styfrom <= a.allotement_date AND Styto >= a.allotement_date  AND  BkFrom <= '".date('Y-m-d')."' AND BkTo >= '".date('Y-m-d')."'  AND Bkbefore < DATEDIFF(a.allotement_date,'".date('Y-m-d')."') AND numofnights <= ".$tot_days." AND discount_type = 'MLOS')  OR (Styfrom <= a.allotement_date AND Styto >= a.allotement_date  AND  BkFrom <= '".date('Y-m-d')."' AND BkTo >= '".date('Y-m-d')."' AND Bkbefore < DATEDIFF(a.allotement_date,'".date('Y-m-d')."')  AND discount_type = '') OR (Styfrom <= a.allotement_date AND Styto >= a.allotement_date  AND  BkFrom <= '".date('Y-m-d')."' AND BkTo >= '".date('Y-m-d')."' AND discount_type = 'EB') OR (Styfrom <= a.allotement_date AND Styto >= a.allotement_date  AND  BkFrom <= '".date('Y-m-d')."' AND BkTo >= '".date('Y-m-d')."'  AND Bkbefore < DATEDIFF(a.allotement_date,'".date('Y-m-d')."')  AND discount_type = 'REB')) limit 1) as generaldis
 
       FROM hotel_tbl_allotement a INNER JOIN hotel_tbl_contract con ON con.contract_id = a.contract_id 
 
-      LEFT JOIN hotel_tbl_revenue rev ON FIND_IN_SET(a.hotel_id, IFNULL(rev.hotels,'')) > 0 AND FIND_IN_SET(a.contract_id, IFNULL(rev.contracts,'')) > 0 AND  rev.FromDate <= '".date('Y-m-d',strtotime($data['check_in']))."' AND  rev.ToDate >= '".date('Y-m-d',strtotime($data['check_out']))."'
+      LEFT JOIN hotel_tbl_revenue rev ON FIND_IN_SET(a.hotel_id, IFNULL(rev.hotels,'')) > 0 AND FIND_IN_SET(a.contract_id, IFNULL(rev.contracts,'')) > 0 AND rev.FromDate <= '".date('Y-m-d',strtotime($data['check_in']))."' AND  rev.ToDate >= '".date('Y-m-d',strtotime($data['check_out']))."'
 
       LEFT JOIN hoteldiscount dis ON FIND_IN_SET(a.hotel_id,dis.hotelid) > 0 AND FIND_IN_SET(a.contract_id,dis.contract) > 0 
       AND FIND_IN_SET(a.room_id,dis.room) > 0 AND Discount_flag = 1 AND (Styfrom <= '".date('Y-m-d',strtotime($data['check_in']))."' AND Styto >= '".date('Y-m-d',strtotime($data['check_in']))."' 
-      AND BkFrom <= '".date('Y-m-d')."' AND BkTo >= '".date('Y-m-d')."') AND Bkbefore < ".$Bkbefore." AND FIND_IN_SET(a.allotement_date,BlackOut)=0 
-      AND discount_type = 'stay&pay' AND stay_night <= ".$tot_days." INNER JOIN hotel_tbl_hotel_room_type f ON f.id = a.room_id INNER JOIN hotel_tbl_room_type g ON g.id = f.room_type  where (f.max_total >= ".($data['Room'.($key+1).'Adults']+$data['Room'.($key+1).'Child'])." AND f.occupancy >= ".$data['Room'.($key+1).'Adults']." AND f.occupancy_child >= ".$data['Room'.($key+1).'Child'].") AND f.delflg = 1 AND a.allotement_date IN ('".$implode_data."') AND a.contract_id IN ('".$implode_data2."') AND a.amount !=0 AND (SELECT count(*) FROM hotel_tbl_minimumstay WHERE a.allotement_date BETWEEN fromDate AND toDate AND contract_id = a.contract_id AND minDay > ".$tot_days.") = 0 AND (SELECT count(*) FROM hotel_tbl_closeout_period WHERE closedDate IN ('".$implode_data."') AND FIND_IN_SET(a.room_id,roomType)>0 AND contract_id = a.contract_id AND hotel_id = a.hotel_id) =0 AND a.hotel_id = ".$hotel_id." AND DATEDIFF(a.allotement_date,'".date('Y-m-d')."') >= a.cut_off ) extra) discal GROUP BY hotel_id,room_id,contract_id HAVING counts = ".$tot_days.") x");
+      AND BkFrom <= '".date('Y-m-d')."' AND BkTo >= '".date('Y-m-d')."') AND Bkbefore < DATEDIFF(a.allotement_date,'".date('Y-m-d')."') AND FIND_IN_SET(a.allotement_date,BlackOut)=0 
+      AND discount_type = 'stay&pay' AND stay_night <= ".$tot_days." INNER JOIN hotel_tbl_hotel_room_type f ON f.id = a.room_id INNER JOIN hotel_tbl_room_type g ON g.id = f.room_type  where (f.max_total >= ".($data['Room'.($key+1).'Adults']+$data['Room'.($key+1).'Child'])." AND f.occupancy >= ".$data['Room'.($key+1).'Adults']." AND f.occupancy_child >= ".$data['Room'.($key+1).'Child'].") AND f.delflg = 1 AND a.allotement_date IN ('".$implode_data."') AND a.contract_id IN ('".$implode_data2."') AND a.amount !=0 AND (SELECT count(*) FROM hotel_tbl_minimumstay WHERE a.allotement_date BETWEEN fromDate AND toDate AND contract_id = a.contract_id AND minDay > ".$tot_days.") = 0 AND (SELECT count(*) FROM hotel_tbl_closeout_period WHERE closedDate IN ('".$implode_data."') AND FIND_IN_SET(a.room_id,roomType)>0 AND contract_id = a.contract_id AND hotel_id = a.hotel_id) =0 AND a.hotel_id = ".$hotel_id." AND DATEDIFF(a.allotement_date,'".date('Y-m-d')."') >= a.cut_off ) extra) discal GROUP BY hotel_id,room_id,contract_id HAVING counts = ".$tot_days.") x order by dd asc");
          if ($stmt->execute()) {
             $tmp = $stmt->get_result();
             $stmt->close();
@@ -389,8 +387,16 @@ class DbHandler {
         if(!isset($data['hotelcode']) || $data['hotelcode'] == '') {
             $response['hotel_error'] = 'Hotel Code is mandatory';
         }
-        if(!isset($data['room']) || $data['room'] == '') {
-            $response['room_combiation_error'] = 'Room combinations are mandatory';
+        $stmt = $this->conn->prepare("SELECT * FROM api_tbl_search WHERE sessionId = '".$data['session_id']."'");
+        if ($stmt->execute()) {
+            $details = $stmt->get_result()->fetch_assoc();
+            $stmt->close();
+        } 
+        for($i=0;$i<$details['noRooms'];$i++) {
+            if(!isset($data['room'][$i]) || $data['room'][$i] == '') {
+
+                $response['room'.($i+1).'_error'] = 'Room['.$i.'] is required';
+            }
         }
         if(empty($response)) {
             $response['status'] = "success";
@@ -494,11 +500,11 @@ class DbHandler {
             if ($stmt->execute()) {
                 $tmp = $stmt->get_result();
                 $stmt->close();
-                //$extrabedallotment[$i] = array();
+                $extrabedallotment[$i] = array();
                 while($res[] = $tmp->fetch_assoc()) {
                     $extrabedallotment[$i] = $res;
                 }
-            } 
+            }
             $boardalt[$i] = array();
             if (count($extrabedallotment[$i])!=0) {
                 foreach ($extrabedallotment[$i] as $key15 => $value15) {
@@ -766,36 +772,38 @@ class DbHandler {
       $roomCheck = array();
       $BlackoutDateCheck = array();
       $query = array();
-      $stmt = $this->conn->prepare('SELECT * FROM hoteldiscount WHERE Discount_flag = 1  AND
-    FIND_IN_SET('.$hotel_id.' ,hotelid) > 0 AND FIND_IN_SET('.$room_id.',room) > 0 AND FIND_IN_SET("'.$contract_id.'",contract) > 0 AND ((Styfrom <= "'.$startdate.'" AND Styto >= "'.$startdate.'" AND  BkFrom <= "'.date("Y-m-d").'" AND BkTo >= "'.date("Y-m-d").'") AND stay_night <= '.$tot_days.'  AND discount_type = "stay&pay") AND discount  = (SELECT MIN(discount) FROM hoteldiscount  WHERE Discount_flag = 1 AND FIND_IN_SET('.$hotel_id.' ,hotelid) > 0 AND FIND_IN_SET('.$room_id.',room) > 0 AND FIND_IN_SET("'.$contract_id.'",contract) > 0 AND (Styfrom <= "'.$startdate.'" AND Styto >= "'.$startdate.'" AND  BkFrom <= "'.date("Y-m-d").'" AND BkTo >= "'.date("Y-m-d").'") AND stay_night <= '.$tot_days.' AND discount_type = "stay&pay" order by stay_night desc) order by stay_night desc');
-      if($stmt->execute()) {
-        $tmp = $stmt->get_result();
-        $stmt->close();
-        while($res = $tmp->fetch_assoc()) {
-            $query[] = $res;
-        }
-      }
-      if (count($query)!=0) {
-        if($query['BlackOut']!="")  {
-          $BlackoutDate = explode(",", $query[0]['BlackOut']);
-          for ($j=0; $j < $tot_days ; $j++) { 
-            $dates[$j] =  date('Y-m-d', strtotime($startdate. ' + '.$j.'  days'));
-              if (is_numeric(array_search($dates[$j],$BlackoutDate))) {
-                  $BlackoutDateCheck[] = 1;              
+      if($room_id!="" && $contract_id!="") {
+          $stmt = $this->conn->prepare('SELECT * FROM hoteldiscount WHERE Discount_flag = 1  AND
+        FIND_IN_SET('.$hotel_id.' ,hotelid) > 0 AND FIND_IN_SET('.$room_id.',room) > 0 AND FIND_IN_SET("'.$contract_id.'",contract) > 0 AND ((Styfrom <= "'.$startdate.'" AND Styto >= "'.$startdate.'" AND  BkFrom <= "'.date("Y-m-d").'" AND BkTo >= "'.date("Y-m-d").'") AND stay_night <= '.$tot_days.'  AND discount_type = "stay&pay") AND discount  = (SELECT MIN(discount) FROM hoteldiscount  WHERE Discount_flag = 1 AND FIND_IN_SET('.$hotel_id.' ,hotelid) > 0 AND FIND_IN_SET('.$room_id.',room) > 0 AND FIND_IN_SET("'.$contract_id.'",contract) > 0 AND (Styfrom <= "'.$startdate.'" AND Styto >= "'.$startdate.'" AND  BkFrom <= "'.date("Y-m-d").'" AND BkTo >= "'.date("Y-m-d").'") AND stay_night <= '.$tot_days.' AND discount_type = "stay&pay" order by stay_night desc) order by stay_night desc');
+          if($stmt->execute()) {
+            $tmp = $stmt->get_result();
+            $stmt->close();
+            while($res = $tmp->fetch_assoc()) {
+                $query[] = $res;
+            }
+          }
+          if (count($query)!=0) {
+            if($query['BlackOut']!="")  {
+              $BlackoutDate = explode(",", $query[0]['BlackOut']);
+              for ($j=0; $j < $tot_days ; $j++) { 
+                $dates[$j] =  date('Y-m-d', strtotime($startdate. ' + '.$j.'  days'));
+                  if (is_numeric(array_search($dates[$j],$BlackoutDate))) {
+                      $BlackoutDateCheck[] = 1;              
+                  }
               }
+            }
+            if (array_sum($BlackoutDateCheck)==0) {
+              $discount['stay'] = $query['stay_night'];
+              $discount['pay'] = $query['pay_night'];
+              $discount['dis'] = 'true';
+              $discount['type'] = $query['discount_type'];
+              $discount['discountCode'] = $query['discountCode'];
+              $discount['Extrabed'] = $query['Extrabed'];
+              $discount['General'] = $query['General'];
+              $discount['Board'] = $query['Board'];
+            }
           }
         }
-        if (array_sum($BlackoutDateCheck)==0) {
-          $discount['stay'] = $query['stay_night'];
-          $discount['pay'] = $query['pay_night'];
-          $discount['dis'] = 'true';
-          $discount['type'] = $query['discount_type'];
-          $discount['discountCode'] = $query['discountCode'];
-          $discount['Extrabed'] = $query['Extrabed'];
-          $discount['General'] = $query['General'];
-          $discount['Board'] = $query['Board'];
-        }
-      }
       return $discount;
     }
     public function special_offer_amount($date,$room_id,$hotel_id,$contract_id) {
@@ -804,6 +812,7 @@ class DbHandler {
       if($stmt->execute()) {
         $tmp = $stmt->get_result();
         $stmt->close();
+        $result = array();
         while($res = $tmp->fetch_assoc()) {
             $result = $res;
         }
@@ -815,11 +824,16 @@ class DbHandler {
         if($stmt->execute()) {
             $tmp = $stmt->get_result();
             $stmt->close();
+            $result1 = array();
             while($res = $tmp->fetch_assoc()) {
                 $result1 = $res;
             }
         }
-        $amount = $result1['price'];
+        if (count($result1)!=0) {
+            $amount = $result1['price'];    
+        } else {
+           $amount = 0; 
+        } 
       }
       return $amount;
     }
@@ -828,11 +842,16 @@ class DbHandler {
         if($stmt->execute()) {
             $tmp = $stmt->get_result();
             $stmt->close();
+            $result1 = array();
             while($res = $tmp->fetch_assoc()) {
                 $result1 = $res;
             }
         }
-        $name = $result1['name'];
+        if (count($result1)!=0) {
+            $name = $result1['name'];   
+        } else {
+           $name = ''; 
+        } 
         return $name;
     }
     public function DateWisediscount($date,$hotel_id,$room_id,$contract_id,$type,$checkIn,$checkOut,$status='false') {
@@ -853,7 +872,7 @@ class DbHandler {
       $roomCheck = array();
       $BlackoutDateCheck = array();
       $query = array();
-      if ($status=='false') {
+      if ($status=='false' && $room_id!="" && $contract_id!="") {
         $stmt = $this->conn->prepare('SELECT * FROM hoteldiscount WHERE Discount_flag = 1 AND
         FIND_IN_SET('.$hotel_id.' ,hotelid) > 0 AND FIND_IN_SET('.$room_id.',room) > 0 AND FIND_IN_SET("'.$contract_id.'",contract) > 0 AND ((Styfrom <= "'.$date.'" AND Styto >= "'.$date.'" AND  BkFrom <= "'.date("Y-m-d").'" AND BkTo >= "'.date("Y-m-d").'") AND Bkbefore < '.$tot_days.' AND discount_type = "MLOS" AND numofnights <= '.$totalDays.') AND discount  = (SELECT MIN(discount) FROM hoteldiscount  WHERE Discount_flag = 1 AND FIND_IN_SET('.$hotel_id.' ,hotelid) > 0 AND FIND_IN_SET('.$room_id.',room) > 0 AND FIND_IN_SET("'.$contract_id.'",contract) > 0 AND (Styfrom <= "'.$date.'" AND Styto >= "'.$date.'" AND  BkFrom <= "'.date("Y-m-d").'" AND BkTo >= "'.date("Y-m-d").'") AND Bkbefore < '.$tot_days.' AND discount_type = "MLOS" AND numofnights <= '.$totalDays.')');
         if($stmt->execute()) {
@@ -933,6 +952,42 @@ class DbHandler {
             return $result['tax_percentage'];
         }
         return 0;
+    }
+     public function insertLog($data,$method) {
+        $stmt = $this->conn->prepare("SELECT * FROM api_tbl_users WHERE username = '".$data->getHeaderLine('username')."' and password= '".$data->getHeaderLine('password')."' and status=1");
+        if ($stmt->execute()) {
+            $details = $stmt->get_result()->fetch_assoc();
+            $stmt->close();
+        } 
+        if(isset($details['provider_id'])) {
+            $provider_id = $details['provider_id'];
+        } else {
+            $provider_id = "";
+        }
+        $arr['username'] = $data->getHeaderLine('username');
+        $arr['password'] = $data->getHeaderLine('password');
+        $stmt = $this->conn->prepare("INSERT INTO api_tbl_log(request_date,method,providerId,header_parameters,parameters)values('".date('Y-m-d H:i:s')."', '".$method."', '".$provider_id."', '".json_encode($arr)."','".json_encode($data->getParsedBody())."')");
+        $result = $stmt->execute();
+        // Check for successful insertion
+        if ($result) {
+            // data successfully inserted
+            return true;
+        } else {
+            // Failed to insert
+            return false;
+        }
+    }
+    public function validatesession($data,$providerid) {
+        $stmt = $this->conn->prepare("SELECT * FROM api_tbl_search WHERE sessionid = '".$data['session_id']."' and providerId= '".$providerid."' and searchDate='".date('Y-m-d')."'");
+        if($stmt->execute()) {
+            $result = $stmt->get_result()->fetch_assoc();
+            $stmt->close();
+        }
+        if (!empty($result)) {
+            return "success";
+        } else {
+            return "error";
+        }
     }
 }
 ?>
