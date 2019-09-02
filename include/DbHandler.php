@@ -1208,7 +1208,7 @@ class DbHandler {
           $Room2ChildAge4 = $_REQUEST['room2-childAge'][3]; 
         }
 
-        $room2 = "SELECT *,min(TotalPrice-(TtlPrice*fday)+(exAmountTot-(exAmount*fday))+(boardChildAmountTot-(boardChildAmount*fday))+(exChildAmountTot-(exChildAmount*fday))+(generalsubAmountTot-(generalsubAmount*fday))) as dd FROM (
+        $room2 = " UNION SELECT *,min(TotalPrice-(TtlPrice*fday)+(exAmountTot-(exAmount*fday))+(boardChildAmountTot-(boardChildAmount*fday))+(exChildAmountTot-(exChildAmount*fday))+(generalsubAmountTot-(generalsubAmount*fday))) as dd FROM (
         SELECT *,sum(TtlPrice) as TotalPrice,count(*) as counts,IF(min(allotment)=0,'On Request','Book') as RequestType, IF(extrabed!=0,IF(StayExbed=1,extrabed,extrabed-(extrabed*exdis/100)),0) as exAmount,
          sum(IF(extrabed!=0,IF(StayExbed=1,extrabed,extrabed-(extrabed*exdis/100)),0)) as exAmountTot
         ,IF(StayExbed=1,
@@ -1289,7 +1289,7 @@ class DbHandler {
           $Room3ChildAge4 = $_REQUEST['room3-childAge'][3]; 
         }
 
-        $room3 = "SELECT *,min(TotalPrice-(TtlPrice*fday)+(exAmountTot-(exAmount*fday))+(boardChildAmountTot-(boardChildAmount*fday))+(exChildAmountTot-(exChildAmount*fday))+(generalsubAmountTot-(generalsubAmount*fday))) as dd FROM (
+        $room3 = " UNION SELECT *,min(TotalPrice-(TtlPrice*fday)+(exAmountTot-(exAmount*fday))+(boardChildAmountTot-(boardChildAmount*fday))+(exChildAmountTot-(exChildAmount*fday))+(generalsubAmountTot-(generalsubAmount*fday))) as dd FROM (
         SELECT *,sum(TtlPrice) as TotalPrice,count(*) as counts,IF(min(allotment)=0,'On Request','Book') as RequestType, IF(extrabed!=0,IF(StayExbed=1,extrabed,extrabed-(extrabed*exdis/100)),0) as exAmount,
          sum(IF(extrabed!=0,IF(StayExbed=1,extrabed,extrabed-(extrabed*exdis/100)),0)) as exAmountTot
         ,IF(StayExbed=1,
@@ -1370,7 +1370,7 @@ class DbHandler {
           $Room4ChildAge4 = $_REQUEST['room4-childAge'][3]; 
         }
 
-        $room4 = "SELECT *,min(TotalPrice-(TtlPrice*fday)+(exAmountTot-(exAmount*fday))+(boardChildAmountTot-(boardChildAmount*fday))+(exChildAmountTot-(exChildAmount*fday))+(generalsubAmountTot-(generalsubAmount*fday))) as dd FROM (
+        $room4 = " UNION SELECT *,min(TotalPrice-(TtlPrice*fday)+(exAmountTot-(exAmount*fday))+(boardChildAmountTot-(boardChildAmount*fday))+(exChildAmountTot-(exChildAmount*fday))+(generalsubAmountTot-(generalsubAmount*fday))) as dd FROM (
         SELECT *,sum(TtlPrice) as TotalPrice,count(*) as counts,IF(min(allotment)=0,'On Request','Book') as RequestType, IF(extrabed!=0,IF(StayExbed=1,extrabed,extrabed-(extrabed*exdis/100)),0) as exAmount,
          sum(IF(extrabed!=0,IF(StayExbed=1,extrabed,extrabed-(extrabed*exdis/100)),0)) as exAmountTot
         ,IF(StayExbed=1,
@@ -1451,7 +1451,7 @@ class DbHandler {
           $Room5ChildAge4 = $_REQUEST['room5-childAge'][3]; 
         }
 
-        $room5 = "SELECT *,min(TotalPrice-(TtlPrice*fday)+(exAmountTot-(exAmount*fday))+(boardChildAmountTot-(boardChildAmount*fday))+(exChildAmountTot-(exChildAmount*fday))+(generalsubAmountTot-(generalsubAmount*fday))) as dd FROM (
+        $room5 = " UNION SELECT *,min(TotalPrice-(TtlPrice*fday)+(exAmountTot-(exAmount*fday))+(boardChildAmountTot-(boardChildAmount*fday))+(exChildAmountTot-(exChildAmount*fday))+(generalsubAmountTot-(generalsubAmount*fday))) as dd FROM (
         SELECT *,sum(TtlPrice) as TotalPrice,count(*) as counts,IF(min(allotment)=0,'On Request','Book') as RequestType, IF(extrabed!=0,IF(StayExbed=1,extrabed,extrabed-(extrabed*exdis/100)),0) as exAmount,
          sum(IF(extrabed!=0,IF(StayExbed=1,extrabed,extrabed-(extrabed*exdis/100)),0)) as exAmountTot
         ,IF(StayExbed=1,
@@ -1532,7 +1532,7 @@ class DbHandler {
           $Room6ChildAge4 = $_REQUEST['room6-childAge'][3]; 
         }
 
-        $room6 = "SELECT *,min(TotalPrice-(TtlPrice*fday)+(exAmountTot-(exAmount*fday))+(boardChildAmountTot-(boardChildAmount*fday))+(exChildAmountTot-(exChildAmount*fday))+(generalsubAmountTot-(generalsubAmount*fday))) as dd FROM (
+        $room6 = " UNION SELECT *,min(TotalPrice-(TtlPrice*fday)+(exAmountTot-(exAmount*fday))+(boardChildAmountTot-(boardChildAmount*fday))+(exChildAmountTot-(exChildAmount*fday))+(generalsubAmountTot-(generalsubAmount*fday))) as dd FROM (
         SELECT *,sum(TtlPrice) as TotalPrice,count(*) as counts,IF(min(allotment)=0,'On Request','Book') as RequestType, IF(extrabed!=0,IF(StayExbed=1,extrabed,extrabed-(extrabed*exdis/100)),0) as exAmount,
          sum(IF(extrabed!=0,IF(StayExbed=1,extrabed,extrabed-(extrabed*exdis/100)),0)) as exAmountTot
         ,IF(StayExbed=1,
@@ -1594,9 +1594,9 @@ class DbHandler {
       AND discount_type = 'stay&pay' AND stay_night <= ".$tot_days." INNER JOIN hotel_tbl_hotel_room_type f ON f.id = a.room_id where (f.max_total >= ".($data['adults'][5]+$data['child'][5])." AND f.occupancy >= ".$data['adults'][5]." AND f.occupancy_child >= ".$data['child'][5].") AND f.delflg = 1 AND a.allotement_date IN ('".$implode_data."') AND a.contract_id IN ('".$implode_data2."') AND a.amount !=0 AND (SELECT count(*) FROM hotel_tbl_minimumstay WHERE a.allotement_date BETWEEN fromDate AND toDate AND contract_id = a.contract_id AND minDay > ".$tot_days.") = 0 AND (SELECT count(*) FROM hotel_tbl_closeout_period WHERE closedDate IN ('".$implode_data."') AND FIND_IN_SET(a.room_id,roomType)>0 AND contract_id = a.contract_id AND hotel_id = a.hotel_id) =0 AND a.hotel_id IN (".$implode_data1.") AND DATEDIFF(a.allotement_date,'".date('Y-m-d')."') >= a.cut_off ) discal GROUP BY hotel_id,room_id,contract_id HAVING counts = ".$tot_days.") x GROUP By x.hotel_id";
 
       }
-
       $imgurl = 'http://dev.otelseasy.com/';
       $agent_currency = 'AED';
+      
       $OtelseasyHotels = $this->conn->prepare("SELECT hotel_id as HotelCode,min(amount) as TotalPrice,h.hotel_name as HotelName,h.location as HotelAddress,concat('".$imgurl."uploads/gallery/',n.hotel_id,'/',h.Image1) as HotelPicture,h.hotel_description as HotelDescription, h.rating as Rating,'".$agent_currency."' as Currency,h.starsrating as reviews ,'' as Inclusion  FROM (SELECT m.*,sum(dd) as amount ,count(*) as roomcount  FROM ( ".$room1.$room2.$room3.$room4.$room5.$room6.") m GROUP BY m.hotel_id HAVING roomcount >= ".count($data['adults']).") n INNER JOIN hotel_tbl_hotels h ON h.id = n.hotel_id GROUP BY n.hotel_id");
 
       if ($OtelseasyHotels->execute()) {
