@@ -59,10 +59,12 @@ $app->post('/HotelSearch',function($request,$response) {
        $data['nights'] = $no_of_days->format("%a");
        $data['session_id'] = $session_id;
        $data['provider_id'] = $result['provider_id'];
-       $res = $db->addSearchDetails($data);
+       // $res = $db->addSearchDetails($data);
+       $data['view'] = $db->getHotelList($request->getParsedBody());
        $response['status']['status'] = "success";
        $response['status']['description'] = "Hotel Search is Successfull";
        $response['status']['Session ID'] = $session_id;
+       $response['result'] = $data['view'];
        echoResponse($response);
     } else {
       echoResponse($validation);
