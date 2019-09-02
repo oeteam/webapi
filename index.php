@@ -374,7 +374,7 @@ $app->post('/HotelBook',function($request,$response) {
   $result = authenticate_user($request);
   if($result['success']==true) {
     // validating post params
-    $validation = $db->validateparametersavailablerooms($request->getParsedBody());
+    $validation = $db->validateparametershotelbook($request->getParsedBody());
     if($validation['status']=="success") {
         $details = $request->getParsedBody();
         $validate_session = $db->validatesession($details,$result['provider_id']);

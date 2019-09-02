@@ -1605,5 +1605,90 @@ class DbHandler {
       }
       return $tmp4->fetch_assoc();
     }
+    public function validateparametershotelbook($data) {
+        $response = array(); 
+        if(!isset($data['session_id']) || $data['session_id'] == '') {
+            $response['session_error'] = 'Session ID is mandatory';
+        } else {
+            $stmt = $this->conn->prepare("SELECT * FROM api_tbl_search WHERE sessionId = '".$data['session_id']."'");
+            if ($stmt->execute()) {
+                $details = $stmt->get_result()->fetch_assoc();
+                $stmt->close();
+            }
+            if(!isset($data['session_id']) || $data['session_id'] == '') {
+                $response['session_error'] = 'Session ID is mandatory';
+            }
+            for($i=0;$i<$details['noRooms'];$i++){
+                for($j=0;$i<$details['Room'.($i+1).'Adults'];$j++) {
+                    if(!isset($data['Room'.($i+1).'AdultTitle'][$j]) || $data['Room'.($i+1).'AdultTitle'][$j] == '') {
+                        $response['adult_detail_error_title'][$j] = 'Room'.($i+1).' adult title details missing';
+                    }
+                    if(!isset($data['Room'.($i+1).'AdultFirstname'][$j]) || $data['Room'.($i+1).'AdultFirstname'][$j] == '') {
+                        $response['adult_detail_error_firstname'][$j] = 'Room'.($i+1).' adult first name details missing';
+                    }
+                    if(!isset($data['Room'.($i+1).'AdultLastname'][$j]) || $data['Room'.($i+1).'AdultLastname'][$j] == '') {
+                        $response['adult_detail_error_lastname'][$j] = 'Room'.($i+1).' adult last name details missing';
+                    }
+                    if(!isset($data['Room'.($i+1).'Adultage'][$j]) || $data['Room'.($i+1).'Adultage'][$j] == '') {
+                        $response['adult_detail_error_age'][$j] = 'Room'.($i+1).' adult age details missing';
+                    }
+                }
+                for($j=0;$i<$details['Room'.($i+1).'Child'];$j++) {
+                    if(!isset($data['Room'.($i+1).'ChildTitle'][$j]) || $data['Room'.($i+1).'ChildTitle'][$j] == '') {
+                        $response['child_detail_error_title'][$j] = 'Room'.($i+1).' child title details missing';
+                    }
+                    if(!isset($data['Room'.($i+1).'ChildFirstname'][$j]) || $data['Room'.($i+1).'ChildFirstname'][$j] == '') {
+                        $response['child_detail_error_firstname'][$j] = 'Room'.($i+1).' child first name details missing';
+                    }
+                    if(!isset($data['Room'.($i+1).'ChildLastname'][$j]) || $data['Room'.($i+1).'ChildLastname'][$j] == '') {
+                        $response['child_detail_error_lastname'][$j] = 'Room'.($i+1).' child last name details missing';
+                    }
+                    if(!isset($data['Room'.($i+1).'Childage'][$j]) || $data['Room'.($i+1).'Childage'] == '') {
+                        $response['child_detail_error_age'][$j] = 'Room'.($i+1).' child age details missing';
+                    }
+                }
+                if(!isset($data['roomindex'][$i]) || $data['roomindex'][$i] == '') {
+                    $response['roomindex_error'] = 'Room'.($i+1). 'index is mandatory';
+                }
+            }
+        }
+        
+        if(!isset($data['address']) || $data['address'] == '') {
+            $response['address_error'] = 'Address is mandatory';
+        }
+        if(!isset($data['countrycode']) || $data['countrycode'] == '') {
+            $response['countrycode_error'] = 'City name is mandatory';
+        }
+        if(!isset($data['areacode']) || $data['areacode'] == '') {
+            $response['areacode_error'] = 'Area code is mandatory';
+        }
+        if(!isset($data['phoneno']) || $data['phoneno'] == '') {
+            $response['phoneno_error'] = 'Phone number is mandatory';
+        }
+        if(!isset($data['email']) || $data['email'] == '') {
+            $response['email_error'] = 'Email is mandatory';
+        }
+        if(!isset($data['city']) || $data['city'] == '') {
+            $response['city_error'] = 'City is mandatory';
+        }
+        if(!isset($data['state']) || $data['state'] == '') {
+            $response['state_error'] = 'State is mandatory';
+        }
+        if(!isset($data['country']) || $data['country'] == '') {
+            $response['country_error'] = 'Country is mandatory';
+        }
+        if(!isset($data['zipcode']) || $data['zipcode'] == '') {
+            $response['zipcode_error'] = 'Zipcode is mandatory';
+        }
+        if(!isset($data['amount']) || $data['amount'] == '') {
+            $response['amount_error'] = 'Amount is mandatory';
+        }
+        if(empty($response)) {
+            $response['status'] = "success";
+        } else {
+            $response['status'] = "error";
+        }
+        return $response;
+    }
 }
 ?>
