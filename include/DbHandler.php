@@ -1610,7 +1610,7 @@ class DbHandler {
         if(!isset($data['session_id']) || $data['session_id'] == '') {
             $response['session_error'] = 'Session ID is mandatory';
         } else {
-            $stmt = $this->conn->prepare("SELECT * FROM api_tbl_search WHERE sessionId = '".$data['session_id']."'");
+            $stmt = $this->conn->prepare("SELECT * FROM api_tbl_search WHERE sessionId = '".$data['session_id']."' limit 1");
             if ($stmt->execute()) {
                 $details = $stmt->get_result()->fetch_assoc();
                 $stmt->close();
@@ -1619,7 +1619,7 @@ class DbHandler {
                 $response['session_error'] = 'Session ID is mandatory';
             }
             for($i=0;$i<$details['noRooms'];$i++){
-                for($j=0;$i<$details['Room'.($i+1).'Adults'];$j++) {
+                for($j=0;$j < ($details['Room'.($i+1).'Adults']);$j++) {
                     if(!isset($data['Room'.($i+1).'AdultTitle'][$j]) || $data['Room'.($i+1).'AdultTitle'][$j] == '') {
                         $response['adult_detail_error_title'][$j] = 'Room'.($i+1).' adult title details missing';
                     }
@@ -1633,7 +1633,7 @@ class DbHandler {
                         $response['adult_detail_error_age'][$j] = 'Room'.($i+1).' adult age details missing';
                     }
                 }
-                for($j=0;$i<$details['Room'.($i+1).'Child'];$j++) {
+                for($j=0;$j<$details['Room'.($i+1).'Child'];$j++) {
                     if(!isset($data['Room'.($i+1).'ChildTitle'][$j]) || $data['Room'.($i+1).'ChildTitle'][$j] == '') {
                         $response['child_detail_error_title'][$j] = 'Room'.($i+1).' child title details missing';
                     }
