@@ -365,6 +365,31 @@ $app->post('/BookingReview',function($request,$response) {
     echoResponse($result);
   }
 });
+$app->post('/HotelBook',function($request,$response) {
+  $response = array();
+  $db = new DbHandler();
+  $log = $db->insertLog($request,'HotelBook');
+  $result = authenticate_user($request);
+  if($result['success']==true) {
+    // validating post params
+    $validation = $db->validateparametersavailablerooms($request->getParsedBody());
+    if($validation['status']=="success") {
+        $details = $request->getParsedBody();
+        $validate_session = $db->validatesession($details,$result['provider_id']);
+        if($validate_session == "success") {
+          
+        } else {
+          $response['status']['status'] = "error";
+          $response['status']['session_error'] = "Session invalid";
+        }
+        echoResponse($response);
+    } else {
+      echoResponse($validation);
+    }
+  } else {
+    echoResponse($result);
+  }
+});
 function authenticate_user($request) {
   // getting request header
   $username = $request->getHeaderLine('username');

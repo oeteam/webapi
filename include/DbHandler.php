@@ -377,7 +377,11 @@ class DbHandler {
         while($ot = $tmp->fetch_assoc()) {
             $rooms[] = $ot;
         }
-        return $rooms;
+        if(empty($rooms)) {
+            return null;
+        } else {
+            return $rooms;
+        }   
     }
     public function validateparametersbookingreview($data) {
         $response = array();
