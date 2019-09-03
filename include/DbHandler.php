@@ -1621,38 +1621,40 @@ class DbHandler {
             for($i=0;$i<$details['noRooms'];$i++){
                 for($j=0;$j < ($details['Room'.($i+1).'Adults']);$j++) {
                     if(!isset($data['Room'.($i+1).'AdultTitle'][$j]) || $data['Room'.($i+1).'AdultTitle'][$j] == '') {
-                        $response['adult_detail_error_title'][$j] = 'Room'.($i+1).' adult title details missing';
+                        $response['adult_detail_error_title'][$i][$j] = 'Room'.($i+1).' adult'.($j+1).' title details missing';
                     }
                     if(!isset($data['Room'.($i+1).'AdultFirstname'][$j]) || $data['Room'.($i+1).'AdultFirstname'][$j] == '') {
-                        $response['adult_detail_error_firstname'][$j] = 'Room'.($i+1).' adult first name details missing';
+                        $response['adult_detail_error_firstname'][$i][$j] = 'Room'.($i+1).' adult'.($j+1).' first name details missing';
                     }
                     if(!isset($data['Room'.($i+1).'AdultLastname'][$j]) || $data['Room'.($i+1).'AdultLastname'][$j] == '') {
-                        $response['adult_detail_error_lastname'][$j] = 'Room'.($i+1).' adult last name details missing';
+                        $response['adult_detail_error_lastname'][$i][$j] = 'Room'.($i+1).' adult'.($j+1).' last name details missing';
                     }
-                    if(!isset($data['Room'.($i+1).'Adultage'][$j]) || $data['Room'.($i+1).'Adultage'][$j] == '') {
-                        $response['adult_detail_error_age'][$j] = 'Room'.($i+1).' adult age details missing';
+                    if(!isset($data['Room'.($i+1).'AdultAge'][$j]) || $data['Room'.($i+1).'AdultAge'][$j] == '') {
+                        $response['adult_detail_error_age'][$i][$j] = 'Room'.($i+1).' adult'.($j+1).' age details missing';
                     }
                 }
                 for($j=0;$j<$details['Room'.($i+1).'Child'];$j++) {
                     if(!isset($data['Room'.($i+1).'ChildTitle'][$j]) || $data['Room'.($i+1).'ChildTitle'][$j] == '') {
-                        $response['child_detail_error_title'][$j] = 'Room'.($i+1).' child title details missing';
+                        $response['child_detail_error_title'][$j] = 'Room'.($i+1).' child'.($j+1).' title details missing';
                     }
                     if(!isset($data['Room'.($i+1).'ChildFirstname'][$j]) || $data['Room'.($i+1).'ChildFirstname'][$j] == '') {
-                        $response['child_detail_error_firstname'][$j] = 'Room'.($i+1).' child first name details missing';
+                        $response['child_detail_error_firstname'][$j] = 'Room'.($i+1).' child'.($j+1).' first name details missing';
                     }
                     if(!isset($data['Room'.($i+1).'ChildLastname'][$j]) || $data['Room'.($i+1).'ChildLastname'][$j] == '') {
-                        $response['child_detail_error_lastname'][$j] = 'Room'.($i+1).' child last name details missing';
+                        $response['child_detail_error_lastname'][$j] = 'Room'.($i+1).' child'.($j+1).' last name details missing';
                     }
-                    if(!isset($data['Room'.($i+1).'Childage'][$j]) || $data['Room'.($i+1).'Childage'] == '') {
-                        $response['child_detail_error_age'][$j] = 'Room'.($i+1).' child age details missing';
+                    if(!isset($data['Room'.($i+1).'ChildAge'][$j]) || $data['Room'.($i+1).'ChildAge'] == '') {
+                        $response['child_detail_error_age'][$j] = 'Room'.($i+1).' child'.($j+1).' age details missing';
                     }
                 }
                 if(!isset($data['roomindex'][$i]) || $data['roomindex'][$i] == '') {
-                    $response['roomindex_error'] = 'Room'.($i+1). 'index is mandatory';
+                    $response['roomindex_error'][$i] = 'Room'.($i+1). 'index is mandatory';
                 }
             }
         }
-        
+        if(!isset($data['hotelcode']) || $data['hotelcode'] == '') {
+            $response['hotelcode_error'] = 'Hotel Code is mandatory';
+        }
         if(!isset($data['address']) || $data['address'] == '') {
             $response['address_error'] = 'Address is mandatory';
         }
@@ -1689,6 +1691,28 @@ class DbHandler {
             $response['status'] = "error";
         }
         return $response;
+    }
+    public function max_booking_id() {
+        $stmt = $this->conn->prepare("SELECT max(id) as id FROM hotel_tbl_booking");
+        if($stmt->execute()) {
+            $result = $stmt->get_result()->fetch_assoc();
+            $stmt->close();
+        }
+        return $result;
+    }
+    public function addBooking($data) {    
+        $stmt = $this->conn->prepare("insert into hotel_tbl_booking(Room1Discount,Room2Discount,Room3Discount,Room4Discount,Room5Discount,Room6Discount,revenueMarkupType,revenueMarkup,revenueExtrabedMarkup,revenueExtrabedMarkupType,revenueGeneralMarkup,revenueGeneralMarkupType,revenueBoardMarkup,revenueBoardMarkupType,Room1individual_amount,Room2individual_amount,Room3individual_amount,Room4individual_amount,Room5individual_amount,Room6individual_amount,ExtrabedDiscount,GeneralDiscount,BoardDiscount,booking_flag,booking_id,hotel_id,room_id,normal_price,per_room_amount,tax,tax_amount,total_amount,currency_type,adults_count,childs_count,agent_markup,admin_markup,check_in,check_out,no_of_days,book_room_count,providerId,search_markup,bk_contact_fname,bk_contact_lname,bk_contact_email,bk_contact_number,contract_id,board,Rwadults,Rwchild,Room1ChildAge,Room2ChildAge,Room3ChildAge,Room4ChildAge,Room5ChildAge,Room6ChildAge,individual_discount,SpecialRequest,Room1-FName,Room2-FName,Room3-FName,Room4-FName,Room5-FName,Room6-FName,Room1-LName,Room2-LName,Room3-LName,Room4-LName,Room5-LName,Room6-LName,discount,discountCode,discountType,discountStay,discountPay,nationality,Created_Date,Created_By)values('".$data['Room1Discount']."','".$data['Room2Discount']."','".$data['Room3Discount']."','".$data['Room4Discount']."','".$data['Room5Discount']."','".$data['Room6Discount']."','".$data['revenueMarkupType']."','".$data['revenueMarkup']."','".$data['revenueExtrabedMarkup']."','".$data['revenueExtrabedMarkupType']."','".$data['revenueGeneralMarkup']."','".$data['revenueGeneralMarkupType']."','".$data['revenueBoardMarkup']."','".$data['revenueBoardMarkupType']."','".$data['Room1individual_amount']."','".$data['Room2individual_amount']."','".$data['Room3individual_amount']."','".$data['Room4individual_amount']."','".$data['Room5individual_amount']."','".$data['Room6individual_amount']."','".$data['ExtrabedDiscount']."','".$data['GeneralDiscount']."','".$data['BoardDiscount']."','".$data['booking_flag']."','".$data['booking_id']."','".$data['hotel_id']."','".$data['room_id']."','".$data['normal_price']."','".$data['per_room_amount']."','".$data['tax']."','".$data['tax_amount']."','".$data['total_amount']."','".$data['currency_type']."','".$data['adults_count']."','".$data['childs_count']."','".$data['agent_markup']."','".$data['admin_markup']."','".$data['check_in']."','".$data['check_out']."','".$data['no_of_days']."','".$data['book_room_count']."','".$data['providerId']."','".$data['search_markup']."','".$data['bk_contact_fname']."','".$data['bk_contact_lname']."','".$data['bk_contact_email']."','".$data['bk_contact_number']."','".$data['contract_id']."','".$data['board']."','".$data['Rwadults']."','".$data['Rwchild']."','".$data['Room1ChildAge']."','".$data['Room2ChildAge']."','".$data['Room3ChildAge']."','".$data['Room4ChildAge']."','".$data['Room5ChildAge']."','".$data['Room6ChildAge']."','".$data['individual_discount']."','".$data['SpecialRequest']."','".$data['Room1-FName']."','".$data['Room2-FName']."','".$data['Room3-FName']."','".$data['Room4-FName']."','".$data['Room5-FName']."','".$data['Room6-FName']."','".$data['Room1-LName']."','".$data['Room2-LName']."','".$data['Room3-LName']."','".$data['Room4-LName']."','".$data['Room5-LName']."','".$data['Room6-LName']."','".$data['discount']."','".$data['discountCode']."','".$data['discountType']."','".$data['discountStay']."','".$data['discountPay']."','".$data['Created_Date']."','".$data['Created_By']."')");
+        print_r("insert into hotel_tbl_booking(Room1Discount,Room2Discount,Room3Discount,Room4Discount,Room5Discount,Room6Discount,revenueMarkupType,revenueMarkup,revenueExtrabedMarkup,revenueExtrabedMarkupType,revenueGeneralMarkup,revenueGeneralMarkupType,revenueBoardMarkup,revenueBoardMarkupType,Room1individual_amount,Room2individual_amount,Room3individual_amount,Room4individual_amount,Room5individual_amount,Room6individual_amount,ExtrabedDiscount,GeneralDiscount,BoardDiscount,booking_flag,booking_id,hotel_id,room_id,normal_price,per_room_amount,tax,tax_amount,total_amount,currency_type,adults_count,childs_count,agent_markup,admin_markup,check_in,check_out,no_of_days,book_room_count,providerId,search_markup,bk_contact_fname,bk_contact_lname,bk_contact_email,bk_contact_number,contract_id,board,Rwadults,Rwchild,Room1ChildAge,Room2ChildAge,Room3ChildAge,Room4ChildAge,Room5ChildAge,Room6ChildAge,individual_discount,SpecialRequest,Room1-FName,Room2-FName,Room3-FName,Room4-FName,Room5-FName,Room6-FName,Room1-LName,Room2-LName,Room3-LName,Room4-LName,Room5-LName,Room6-LName,discount,discountCode,discountType,discountStay,discountPay,nationality,Created_Date,Created_By)values('".$data['Room1Discount']."','".$data['Room2Discount']."','".$data['Room3Discount']."','".$data['Room4Discount']."','".$data['Room5Discount']."','".$data['Room6Discount']."','".$data['revenueMarkupType']."','".$data['revenueMarkup']."','".$data['revenueExtrabedMarkup']."','".$data['revenueExtrabedMarkupType']."','".$data['revenueGeneralMarkup']."','".$data['revenueGeneralMarkupType']."','".$data['revenueBoardMarkup']."','".$data['revenueBoardMarkupType']."','".$data['Room1individual_amount']."','".$data['Room2individual_amount']."','".$data['Room3individual_amount']."','".$data['Room4individual_amount']."','".$data['Room5individual_amount']."','".$data['Room6individual_amount']."','".$data['ExtrabedDiscount']."','".$data['GeneralDiscount']."','".$data['BoardDiscount']."','".$data['booking_flag']."','".$data['booking_id']."','".$data['hotel_id']."','".$data['room_id']."','".$data['normal_price']."','".$data['per_room_amount']."','".$data['tax']."','".$data['tax_amount']."','".$data['total_amount']."','".$data['currency_type']."','".$data['adults_count']."','".$data['childs_count']."','".$data['agent_markup']."','".$data['admin_markup']."','".$data['check_in']."','".$data['check_out']."','".$data['no_of_days']."','".$data['book_room_count']."','".$data['providerId']."','".$data['search_markup']."','".$data['bk_contact_fname']."','".$data['bk_contact_lname']."','".$data['bk_contact_email']."','".$data['bk_contact_number']."','".$data['contract_id']."','".$data['board']."','".$data['Rwadults']."','".$data['Rwchild']."','".$data['Room1ChildAge']."','".$data['Room2ChildAge']."','".$data['Room3ChildAge']."','".$data['Room4ChildAge']."','".$data['Room5ChildAge']."','".$data['Room6ChildAge']."','".$data['individual_discount']."','".$data['SpecialRequest']."','".$data['Room1-FName']."','".$data['Room2-FName']."','".$data['Room3-FName']."','".$data['Room4-FName']."','".$data['Room5-FName']."','".$data['Room6-FName']."','".$data['Room1-LName']."','".$data['Room2-LName']."','".$data['Room3-LName']."','".$data['Room4-LName']."','".$data['Room5-LName']."','".$data['Room6-LName']."','".$data['discount']."','".$data['discountCode']."','".$data['discountType']."','".$data['discountStay']."','".$data['discountPay']."','".$data['Created_Date']."','".$data['Created_By']."')");exit;
+        if ($stmt->execute()) {
+             print_r($data);exit;
+            $stmt = $this->conn->prepare("select max(id) as insertid from hotel_tbl_booking");
+            if($stmt->execute()) {
+                $details = $stmt->get_result()->fetch_assoc();
+                return $details;
+            }  
+        } else {
+            return false;
+        }
     }
 }
 ?>

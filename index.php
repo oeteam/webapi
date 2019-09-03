@@ -48,7 +48,7 @@ $app->post('/HotelSearch',function($request,$response) {
   $log = $db->insertLog($request,'HotelSearch');
   $result = authenticate_user($request);
   if($result['success']==true) {
-     $session_id = md5(date('YmdHis').$result['username'].$result['provider_id']);
+    $session_id = md5(date('YmdHis').$result['username'].$result['provider_id']);
     // validating post params
     $validation = $db->validateparameters($request->getParsedBody());
     if($validation['status']=="success") {
@@ -379,7 +379,253 @@ $app->post('/HotelBook',function($request,$response) {
         $details = $request->getParsedBody();
         $validate_session = $db->validatesession($details,$result['provider_id']);
         if($validate_session == "success") {
-          
+          $searchdet = $db->getSearchDetails($details['session_id']);
+          // Get Max booking Id start 
+          $max_id = $db->max_booking_id();
+          if ($max_id['id']=="") {
+            $max_booking_id = "HAB01";
+          } else {
+            $booking_id = $max_id['id']+1;
+            $max_booking_id = "HAB0".$booking_id;
+          }
+          // Get Max booking Id end 
+          // Roomwise data finding start
+          $booking_flag = 2;
+          $BookingDate = date('Y-m-d');
+          $checkin_date=date_create($searchdet['check_in']);
+          $checkout_date=date_create($searchdet['check_out']);
+          $no_of_days=date_diff($checkin_date,$checkout_date);
+          $tot_days = $no_of_days->format("%a");
+          // Default variable declaration
+          for ($i=0; $i < $searchdet['noRooms']; $i++) {         
+            $arrRoomIndex = explode("-", $details['roomindex'][$i]);
+            $RoomID[$i] = $arrRoomIndex[1]; 
+            $ContractID[$i] = $arrRoomIndex[0]; 
+            // Dicount value declaration start
+            $discountGet = $db->Alldiscount(date('Y-m-d',strtotime($searchdet['check_in'])),date('Y-m-d',strtotime($searchdet['check_out'])),$details['hotelcode'],$RoomID[$i],$ContractID[$i],'Room');
+            $DiscountType[$i] = 'Null';
+            $discountStay[$i] = 0;
+            $discountPay[$i] = 0;
+            $vardecDis = 'Room'.($i+1).'Discount';
+            $$vardecDis = 0;
+            $ExDis[$i] = 0;
+            $GSDis[$i] = 0;
+            $BSDis[$i] = 0;
+            if ($discountGet['dis']=="true") {
+              $DiscountType[$i] = $discountGet['type'];
+              $discountCode[$i] = $discountGet['discountCode'];
+              $discountStay[$i] = $discountGet['stay'];
+              $discountPay[$i] = $discountGet['pay'];
+              if ($discountGet['Extrabed']==1) {
+                $ExDis[$i] = 1;
+              }
+              if ($discountGet['General']==1) {
+                $GSDis[$i] = 1;
+              }
+              if ($discountGet['Board']==1) {
+                $BSDis[$i] = 1;
+              }
+            } else {
+              $discountCodes[$i] = array();
+              $discountTypes[$i] = array();
+              $ExArr[$i] = array();
+              $GsArr[$i] = array();
+              $BsArr[$i] = array();
+              for ($j=0; $j < $tot_days ; $j++) {
+                $dateOut = date('Y-m-d', strtotime($searchdet['check_in']. ' + '.$j.'  days'));
+                $DateWisediscount[$j] = $db->DateWisediscount($dateOut,$details['hotelcode'],$RoomID[$i],$ContractID[$i],'Room',$searchdet['check_in'],$searchdet['check_out']);
+                $discount[$i][$j]  = 0;
+                if (isset($DateWisediscount[$j]['discountCode']) && $DateWisediscount[$j]['discountCode']!="") {
+                  $discountCodes[$i][$j]= $DateWisediscount[$j]['discountCode'];
+                  $discountTypes[$i][$j] = $DateWisediscount[$j]['discountType'];
+                  $discount[$i][$j] = $DateWisediscount[$j]['discount'];
+                  if ($DateWisediscount[$j]['Extrabed']==1) {
+                    $ExArr[$i][$j] = 1;
+                  }
+                  if ($DateWisediscount[$j]['General']==1) {
+                    $GsArr[$i][$j] = 1;
+                  }
+                  if ($DateWisediscount[$j]['Board']==1) {
+                    $BsArr[$i][$j] = 1;
+                  }
+                } 
+              }
+              $ExDis[$i] = array_sum($ExArr[$i])==0 ? 0 : 1;
+              $GSDis[$i] = array_sum($GsArr[$i])==0 ? 0 : 1;
+              $BSDis[$i] = array_sum($BsArr[$i])==0 ? 0 : 1;
+              $$vardecDis = implode(",", $discount[$i]);
+              $discountCode[$i] = implode(",", array_unique($discountCodes[$i]));
+              $DiscountType[$i] = implode(",", array_unique($discountTypes[$i]));
+            }
+            // Dicount value declaration start
+          }
+          $discountStay= implode(",", $discountStay);
+          $discountPay= implode(",", $discountPay);
+          $discountType = implode(",", $DiscountType);
+          $discountCode = implode(",", $discountCode);
+          // Roomwise data finding start
+          // Traveller details declaration start
+          $Rwadults = $searchdet['Room1Adults'].','.$searchdet['Room2Adults'].','.$searchdet['Room3Adults'].','.$searchdet['Room4Adults'].','.$searchdet['Room5Adults'].','.$searchdet['Room6Adults'];
+          $RwChild = $searchdet['Room1Child'].','.$searchdet['Room2Child'].','.$searchdet['Room3Child'].','.$searchdet['Room4Child'].','.$searchdet['Room5Child'].','.$searchdet['Room6Child'];
+          $reqroom1childAge = "";
+          $reqroom2childAge = "";
+          $reqroom3childAge = "";
+          $reqroom4childAge = "";
+          $reqroom5childAge = "";
+          $reqroom6childAge = "";
+          if (isset($details['Room1ChildAge'])) {
+            $reqroom1childAge = implode(",", $details['Room1ChildAge']);
+          }
+          if (isset($details['Room2ChildAge'])) {
+            $reqroom2childAge = implode(",", $details['Room2ChildAge']);
+          }
+          if (isset($details['Room3ChildAge'])) {
+            $reqroom3childAge = implode(",", $details['Room3ChildAge']);
+          }
+          if (isset($details['Room4ChildAge'])) {
+            $reqroom4childAge = implode(",", $details['Room4ChildAge']);
+          }
+          if (isset($details['Room5ChildAge'])) {
+            $reqroom5childAge = implode(",", $details['Room5ChildAge']);
+          }
+          if (isset($details['Room6ChildAge'])) {
+            $reqroom6childAge = implode(",", $details['Room6ChildAge']);
+          }
+          $reqroom1adultFirstname = "";
+          $reqroom2adultFirstname = "";
+          $reqroom3adultFirstname = "";
+          $reqroom4adultFirstname = "";
+          $reqroom5adultFirstname = "";
+          $reqroom6adultFirstname = "";
+          if (isset($details['Room1AdultFirstname'])) {
+            $reqroom1adultFirstname = implode(",", $details['Room1AdultFirstname']);
+          }
+          if (isset($details['Room2AdultFirstname'])) {
+            $reqroom2adultFirstname = implode(",", $details['Room2AdultFirstname']);
+          }
+          if (isset($details['Room3AdultFirstname'])) {
+            $reqroom3adultFirstname = implode(",", $details['Room3AdultFirstname']);
+          }
+          if (isset($details['Room4AdultFirstname'])) {
+            $reqroom4adultFirstname = implode(",", $details['Room4AdultFirstname']);
+          }
+          if (isset($details['Room5AdultFirstname'])) {
+            $reqroom5adultFirstname = implode(",", $details['Room5AdultFirstname']);
+          }
+          if (isset($details['Room6AdultFirstname'])) {
+            $reqroom6adultFirstname = implode(",", $details['Room6AdultFirstname']);
+          }
+          $reqroom1adultLastname = "";
+          $reqroom2adultLastname = "";
+          $reqroom3adultLastname = "";
+          $reqroom4adultLastname = "";
+          $reqroom5adultLastname = "";
+          $reqroom6adultLastname = "";
+          if (isset($details['Room1AdultLastname'])) {
+            $reqroom1adultLastname = implode(",", $details['Room1AdultLastname']);
+          }
+          if (isset($details['Room2AdultLastname'])) {
+            $reqroom2adultLastname = implode(",", $details['Room2AdultLastname']);
+          }
+          if (isset($details['Room3AdultLastname'])) {
+            $reqroom3adultLastname = implode(",", $details['Room3AdultLastname']);
+          }
+          if (isset($details['Room4AdultLastname'])) {
+            $reqroom4adultLastname = implode(",", $details['Room4AdultLastname']);
+          }
+          if (isset($details['Room5AdultLastname'])) {
+            $reqroom5adultLastname = implode(",", $details['Room4AdultLastname']);
+          }
+          if (isset($details['Room6AdultLastname'])) {
+            $reqroom6adultLastname = implode(",", $details['Room6AdultLastname']);
+          }
+          // Traveller details declaration end
+          $datas= array(
+              'Room1Discount' => isset($Room1Discount) ? $Room1Discount : 0,
+              'Room2Discount' => isset($Room2Discount) ? $Room2Discount : 0,
+              'Room3Discount' => isset($Room3Discount) ? $Room3Discount  : 0,
+              'Room4Discount' => isset($Room4Discount) ? $Room4Discount : 0,
+              'Room5Discount' => isset($Room5Discount) ? $Room5Discount  : 0,
+              'Room6Discount' => isset($Room6DiscountPercentage) ? $Room6DiscountPercentage : 0,
+              'revenueMarkupType' => '',
+              'revenueMarkup' => '',
+              'revenueExtrabedMarkup' => '',
+              'revenueExtrabedMarkupType' => '',
+              'revenueGeneralMarkup' => '',
+              'revenueGeneralMarkupType' => '',
+              'revenueBoardMarkup' => '',
+              'revenueBoardMarkupType' => '',
+              'Room1individual_amount' => 0,
+              'Room2individual_amount' => 0,
+              'Room3individual_amount' => 0,
+              'Room4individual_amount' => 0,
+              'Room5individual_amount' => 0,
+              'Room6individual_amount' => 0,
+              'ExtrabedDiscount' => implode(",", $ExDis),
+              'GeneralDiscount' => implode(",", $GSDis),
+              'BoardDiscount' => implode(",", $BSDis),
+              'booking_flag' => $booking_flag,
+              'booking_id' =>$max_booking_id,
+              'hotel_id' =>$details['hotelcode'],
+              'room_id' => implode(",", $RoomID),
+              'normal_price' =>0,
+              'per_room_amount' =>0,
+              'tax' =>0,
+              'tax_amount' => '',
+              'total_amount' =>$details['amount'],
+              'currency_type' =>'AED',
+              'adults_count' =>$searchdet['adults'],
+              'childs_count' =>$searchdet['child'],
+              'agent_markup' =>0,
+              'admin_markup' =>0,
+              'check_in' => $searchdet['check_in'],
+              'check_out' => $searchdet['check_out'],
+              'no_of_days' => $tot_days,
+              'book_room_count' => $searchdet['noRooms'],
+              'providerId' => $result['provider_id'],
+              'search_markup' =>  0,
+              'bk_contact_fname' => $details['Room1AdultFirstname'][0],
+              'bk_contact_lname' => $details['Room1AdultLastname'][0],
+              'bk_contact_email' => $details['email'],
+              'bk_contact_number' => $details['phoneno'],
+              'contract_id' => implode(",", $ContractID),
+              'board' => '',
+              'Rwadults' => $Rwadults,
+              'Rwchild' => $RwChild,
+              'Room1ChildAge' => $reqroom1childAge,
+              'Room2ChildAge' => $reqroom2childAge,
+              'Room3ChildAge' => $reqroom3childAge,
+              'Room4ChildAge' => $reqroom4childAge,
+              'Room5ChildAge' => $reqroom5childAge,
+              'Room6ChildAge' => $reqroom6childAge,
+              'individual_amount' => 0,
+              'individual_discount' => '',
+              'SpecialRequest' => '',
+              'Room1-FName' => $reqroom1adultFirstname,
+              'Room2-FName' => $reqroom2adultFirstname,
+              'Room3-FName' => $reqroom3adultFirstname,
+              'Room4-FName' => $reqroom4adultFirstname,
+              'Room5-FName' => $reqroom5adultFirstname,
+              'Room6-FName' => $reqroom6adultFirstname,
+              'Room1-LName' => $reqroom1adultLastname,
+              'Room2-LName' => $reqroom2adultLastname,
+              'Room3-LName' => $reqroom3adultLastname,
+              'Room4-LName' => $reqroom4adultLastname,
+              'Room5-LName' => $reqroom5adultLastname,
+              'Room6-LName' => $reqroom6adultLastname,
+              'discount' => "",
+              'discountCode' => $discountCode,
+              'discountType' => $discountType,
+              'discountStay' => $discountStay,
+              'discountPay' => $discountPay,
+              'nationality' => $searchdet['nationality'],
+              'Created_Date' => date('Y-m-d H:i:s'),
+              'Created_By' => $result['provider_id'] ,
+            );
+          $booking_id = $db->addBooking($datas);
+          $response['status']['status'] = "success";
+          $response['status']['description'] = "Hotel booked successfully";
+          $response['status']['bookingId'] = $booking_id['insertid'];
         } else {
           $response['status']['status'] = "error";
           $response['status']['session_error'] = "Session invalid";
