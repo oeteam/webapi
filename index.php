@@ -147,12 +147,12 @@ $app->post('/BookingReview',function($request,$response) {
           }
           $viwedate1 = date("d/m/Y", strtotime(isset($searchdet['check_in']) ? $searchdet['check_in'] : ''));
           $viwedate2 = date("d/m/Y", strtotime(isset($searchdet['check_out']) ? $searchdet['check_out'] : ''));
-          $response['status']['result']['Checkin']= $viwedate1;
-          $response['status']['result']['Checkout']= $viwedate2;
-          $response['status']['result']['Adults']= $searchdet['adults'];
-          $response['status']['result']['Child']= $searchdet['child'];
-          $response['status']['result']['no_of_rooms']= $searchdet['noRooms'];
-          $response['status']['result']['no_of_days']=  $tot_days;
+          $response['result']['Checkin']= $viwedate1;
+          $response['result']['Checkout']= $viwedate2;
+          $response['result']['Adults']= $searchdet['adults'];
+          $response['result']['Child']= $searchdet['child'];
+          $response['result']['no_of_rooms']= $searchdet['noRooms'];
+          $response['result']['no_of_days']=  $tot_days;
           for ($i=0; $i < $searchdet['noRooms']; $i++) { 
             $roomindex = explode('-',$details['room'][$i]);
             if(isset($roomindex[1])) {
@@ -165,37 +165,37 @@ $app->post('/BookingReview',function($request,$response) {
             } else {
                $contractid[$i] = "";
             }
-            $data['additionalfoodrequest'] = array();
-            $data['cancellation_policy'] = $db->get_policy_contract($details['hotelcode'],$contractid[$i]);
+            $data['cancellation_policy'] = array();
+            // $data['cancellation_policy'] = $db->get_policy_contract($details['hotelcode'],$contractid[$i]);
             $contractBoardCheck = $db->contractBoardCheck($contractid[$i]);
-            if ($contractBoardCheck['board']=="RO") {
-              $Breakfast = $db->additionalfoodrequest($details['hotelcode'],$contractid[$i],$roomid[$i],$searchdet,'Breakfast');
-              if ($Breakfast!=false) {
-                $data['additionalfoodrequest']['board'][] = 'Breakfast';
-              }
-              $Lunch =  $db->additionalfoodrequest($details['hotelcode'],$contractid[$i],$roomid[$i],$searchdet,'Lunch');
-              if ($Lunch!=false) {
-                $data['additionalfoodrequest']['board'][] = 'Lunch';
-              }
-              $Dinner =  $db->additionalfoodrequest($details['hotelcode'],$contractid[$i],$roomid[$i],$searchdet,'Dinner');
-              if ($Dinner!=false) {
-                $data['additionalfoodrequest']['board'][] = 'Dinner';
-              }
-            } else if ($contractBoardCheck['board']=="BB") {
-              $Lunch = $db->additionalfoodrequest($details['hotelcode'],$contractid[$i],$roomid[$i],$searchdet,'Lunch');
-              if ($Lunch!=false) {
-                $data['additionalfoodrequest']['board'][] = 'Lunch';
-              }
-              $Dinner = $db->additionalfoodrequest($details['hotelcode'],$contractid[$i],$roomid[$i],$searchdet,'Dinner');
-              if ($Dinner!=false) {
-                $data['additionalfoodrequest']['board'][] = 'Dinner';
-              }
-            } else if ($contractBoardCheck['board']=="HB") {
-              $Lunch = $db->additionalfoodrequest($details['hotelcode'],$contractid[$i],$roomid[$i],$searchdet,'Lunch');
-              if ($Lunch!=false) {
-                $data['additionalfoodrequest']['board'][] = 'Lunch';
-              }
-            }
+            // if ($contractBoardCheck['board']=="RO") {
+            //   $Breakfast = $db->additionalfoodrequest($details['hotelcode'],$contractid[$i],$roomid[$i],$searchdet,'Breakfast');
+            //   if ($Breakfast!=false) {
+            //     $data['additionalfoodrequest']['board'][] = 'Breakfast';
+            //   }
+            //   $Lunch =  $db->additionalfoodrequest($details['hotelcode'],$contractid[$i],$roomid[$i],$searchdet,'Lunch');
+            //   if ($Lunch!=false) {
+            //     $data['additionalfoodrequest']['board'][] = 'Lunch';
+            //   }
+            //   $Dinner =  $db->additionalfoodrequest($details['hotelcode'],$contractid[$i],$roomid[$i],$searchdet,'Dinner');
+            //   if ($Dinner!=false) {
+            //     $data['additionalfoodrequest']['board'][] = 'Dinner';
+            //   }
+            // } else if ($contractBoardCheck['board']=="BB") {
+            //   $Lunch = $db->additionalfoodrequest($details['hotelcode'],$contractid[$i],$roomid[$i],$searchdet,'Lunch');
+            //   if ($Lunch!=false) {
+            //     $data['additionalfoodrequest']['board'][] = 'Lunch';
+            //   }
+            //   $Dinner = $db->additionalfoodrequest($details['hotelcode'],$contractid[$i],$roomid[$i],$searchdet,'Dinner');
+            //   if ($Dinner!=false) {
+            //     $data['additionalfoodrequest']['board'][] = 'Dinner';
+            //   }
+            // } else if ($contractBoardCheck['board']=="HB") {
+            //   $Lunch = $db->additionalfoodrequest($details['hotelcode'],$contractid[$i],$roomid[$i],$searchdet,'Lunch');
+            //   if ($Lunch!=false) {
+            //     $data['additionalfoodrequest']['board'][] = 'Lunch';
+            //   }
+            // }
             $extrabed = $db->get_PaymentConfirmextrabedAllotment($searchdet,$details['hotelcode'],$contractid[$i],$roomid[$i],$i); 
             $general = $db->get_Confirmgeneral_supplement($searchdet,$contractid[$i],$roomid[$i],$i+1,$details['hotelcode']); 
             // stay and pay dicount start 
@@ -340,7 +340,7 @@ $app->post('/BookingReview',function($request,$response) {
             }
             
             //print_r($data['cancellation_policy']);exit;
-            if(empty($data['cancellation_policy']) || $data['roomname']=="" || $data['per-day-amount']==0 || $data['discountroomamount']==0 || $data['totalroomamount']['price']==0) {
+            if($data['roomname']=="" || $data['per-day-amount']==0 || $data['discountroomamount']==0 || $data['totalroomamount']['price']==0) {
               $response['status']['result']['room'.($i+1)]['status'][] = 'Error'; 
               $response['status']['result']['room'.($i+1)]['status']['description'] = 'Invalid Room Combination'; 
             } else {
