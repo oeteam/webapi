@@ -620,17 +620,78 @@ $app->post('/HotelBook',function($request,$response) {
               'discountPay' => $discountPay,
               'nationality' => $searchdet['nationality'],
               'Created_Date' => date('Y-m-d H:i:s'),
-              'Created_By' => $result['provider_id'] ,
+              'Created_By' => $result['provider_id']
             );
           $booking_id = $db->addBooking($datas);
           $response['status']['status'] = "success";
           $response['status']['description'] = "Hotel booked successfully";
-          $response['status']['bookingId'] = $booking_id['insertid'];
+          $response['status']['bookingId'] = 'HAB0'.$booking_id['insertid'];
         } else {
           $response['status']['status'] = "error";
           $response['status']['session_error'] = "Session invalid";
         }
         echoResponse($response);
+    } else {
+      echoResponse($validation);
+    }
+  } else {
+    echoResponse($result);
+  }
+});
+$app->post('/BookingDetail',function($request,$response) {
+  $response = array();
+  $db = new DbHandler();
+  $log = $db->insertLog($request,'BookingDetail');
+  $result = authenticate_user($request);
+  if($result['success']==true) {
+    // validating post params
+    $validation = $db->validateparametersbookingdetail($request->getParsedBody());
+    if($validation['status']=="success") {
+       $data = $request->getParsedBody();
+       $bookingdetails = $db->getBookingDetail($data['booking_id']);
+       //print_r($bookingdetails);exit;
+       $response['status']['status'] = "success";
+       $response['result']['Booking_Id'] =  $bookingdetails['booking_id'];
+       $response['result']['Hotel Name'] =  $bookingdetails['hotel_name'];
+       $response['result']['Check_in'] =  $bookingdetails['check_in'];
+       $response['result']['Check_out'] =  $bookingdetails['check_out'];
+       $response['result']['No_of_rooms'] =  $bookingdetails['book_room_count'];
+       $response['result']['No_of_days'] =  $bookingdetails['no_of_days'];
+       $response['result']['Adult_count'] =  $bookingdetails['adults_count'];
+       $response['result']['Child_count'] =  $bookingdetails['childs_count'];
+       $Rwadults = explode(',',$bookingdetails['Rwadults']);
+       $Rwchild = explode(',',$bookingdetails['Rwchild']);
+       $response['result']['Booking_date'] =  $bookingdetails['Created_Date'];
+       for($i=0;$i<$bookingdetails['book_room_count'];$i++) {
+         $response['result']['RoomDetails']['Room'.($i+1)]['Adults'] = $Rwadults[$i];
+         $response['result']['RoomDetails']['Room'.($i+1)]['Child'] = $Rwchild[$i];
+         $adultfirstname = explode(',',$bookingdetails['Room'.($i+1).'-FName']);
+         $adultlastname = explode(',',$bookingdetails['Room'.($i+1).'-LName']);
+         $childage = explode(',',$bookingdetails['Room'.($i+1).'ChildAge']);
+         for($j=0;$j<$Rwadults[$i];$j++) {
+           $response['result']['RoomDetails']['Room'.($i+1)]['Adult_details '.($j+1)]['name'] =  $adultfirstname[$j].' '. $adultlastname[$j];
+         }
+         for($j=0;$j<$Rwchild[$i];$j++) {
+           $response['result']['RoomDetails']['Room'.($i+1)]['Child_details '.($j+1)]['age'] =  $childage[$j];
+         }
+       }
+       if($bookingdetails['booking_flag'] == 1) {
+          $response['result']['booking_status']['status'] = "Accepted";
+          $response['result']['booking_status']['confirmation_no']= $bookingdetails['confirmationNumber'];
+       } else if($bookingdetails['booking_flag'] == 2) {
+          $response['result']['booking_status']['status'] = "Pending";
+       } else if($bookingdetails['booking_flag'] == 3) {
+          $response['result']['booking_status']['status'] = "Cancelled";
+       } else if($bookingdetails['booking_flag'] == 4) {
+          $response['result']['booking_status']['status'] = "Hotel Approved";
+       } else if($bookingdetails['booking_flag'] == 5) {
+          $response['result']['booking_status']['status'] = "Cancellation Pending";
+       } else if($bookingdetails['booking_flag'] == 8) {
+          $response['result']['booking_status']['status'] = "On Request";
+       } else if($bookingdetails['booking_flag'] == 9) {
+          $response['result']['booking_status']['status'] = "Amendmemt";
+       }
+       echoResponse($response);
     } else {
       echoResponse($validation);
     }
