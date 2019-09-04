@@ -700,68 +700,63 @@ class DbHandler {
                 $tmp = $stmt->get_result();
                 $stmt->close();
                 $generalSplmntCheck[$i] = array();
-                while($res = $tmp->fetch_assoc()) {
+                while($res[] = $tmp->fetch_assoc()) {
                     $generalSplmntCheck[$i] = $res;
                 }
             }
             $gsarraySum[$i] = count($generalSplmntCheck[$i]);
-          // print_r($gsarraySum[$i]);exit;
             if (count($generalSplmntCheck[$i])!=0) {
                 foreach ($generalSplmntCheck[$i] as $key1 => $value1) {
-            if ($value1['application']=="Per Person") {
-              if (round($value1['adultAmount'])!=0) {
-                $adultAmount[$value1['type']] = $value1['adultAmount']*$request['Room'.$j.'Adults'];
-              }
-              if (round($value1['adultAmount'])!=0) {
-                $RWadultAmount[$value1['type']][$j] = $value1['adultAmount']*$request['Room'.$j.'Adults'];
-                $RWadult[$value1['type']][$j] = $j;
-              }
-              if (isset($request['Room'.$j.'ChildAge'])) {
-                foreach ($request['Room'.$j.'ChildAge'] as $key44 => $value44) {
-                  if ($value1['MinChildAge'] < $value44) {
-                    if (round($value1['childAmount'])!=0) {
-                      $childAmount[$value1['type']] = $value1['childAmount'];
-                      $RWchildAmount[$value1['type']][$j][$key44] = $value1['childAmount'];
-                      $RWchild[$value1->type][$j] = $j;
+                    if ($value1['application']=="Per Person") {
+                      if (round($value1['adultAmount'])!=0) {
+                        $adultAmount[$value1['type']] = $value1['adultAmount']*$request['Room'.$j.'Adults'];
+                      }
+                      if (round($value1['adultAmount'])!=0) {
+                        $RWadultAmount[$value1['type']][$j] = $value1['adultAmount']*$request['Room'.$j.'Adults'];
+                        $RWadult[$value1['type']][$j] = $j;
+                      }
+                      if(!empty($request['Room'.$j.'ChildAge'])) {
+                        foreach ($request['Room'.$j.'ChildAge'] as $key44 => $value44) {
+                            if ($value1['MinChildAge'] < $value44) {
+                                if (round($value1['childAmount'])!=0) {
+                                  $childAmount[$value1['type']] = $value1['childAmount'];
+                                  $RWchildAmount[$value1['type']][$j][$key44] = $value1['childAmount'];
+                                  $RWchild[$value1->type][$j] = $j;
+                                }
+                            } 
+                        }
+                      } 
+                    } else {
+                      if (round($value1['adultAmount'])!=0) {
+                        $adultAmount[$value1['type']] = $value1['adultAmount'];
+                        $childAmount[$value1['type']] = 0;
+                        $RWadultAmount[$value1['type']][1] = $value1['adultAmount'];
+                        $RWadult[$value1['type']][1] = 1;
+                      }
                     }
-                    // $childAmount[$value1->type] = $value1->childAmount;
-                  } 
+                    $generalsupplementType[$key1] = $value1['type'];
+                    $generalsupplementapplication[$key1] = $value1['application'];         
                 }
-
-              }
-            } else {
-              if (round($value1['adultAmount'])!=0) {
-                $adultAmount[$value1['type']] = $value1['adultAmount'];
-                $childAmount[$value1['type']] = 0;
-                $RWadultAmount[$value1['type']][1] = $value1['adultAmount'];
-                $RWadult[$value1['type']][1] = 1;
-              }
             }
-            $generalsupplementType[$key1] = $value1['type'];
-            $generalsupplementapplication[$key1] = $value1['application'];
-                
-          }
+            $return['date'][$i] = $dateFormatdate[$i];
+            $return['day'][$i] = $dateFormatday[$i];
+            $return['adultamount'][$i] = $adultAmount;
+            $return['RWadultamount'][$i] = $RWadultAmount;
+            $return['RWadult'][$i] = $RWadult;
+            $return['RWchild'][$i] = $RWchild;
+            $return['childamount'][$i] = $childAmount;
+            $return['RWchildAmount'][$i] = $RWchildAmount;
+            $return['general'][$i] = array_unique($generalsupplementType);
+            $return['application'][$i] = array_unique($generalsupplementapplication);
+            $return['ManadultAmount'][$i] = $ManadultAmount;
+            $return['ManchildAmount'][$i] = $ManchildAmount;
+            $return['ManchildAmount'][$i] = $ManchildAmount;
+            $return['Manadultcount'][$i] = $MangeneralsupplementforAdults;
+            $return['Manchildcount'][$i] = $MangeneralsupplementforChilds;
+            $return['mangeneral'][$i] = array_unique($MangeneralsupplementType);
         }
-
-        $return['date'][$i] = $dateFormatdate[$i];
-        $return['day'][$i] = $dateFormatday[$i];
-        $return['adultamount'][$i] = $adultAmount;
-        $return['RWadultamount'][$i] = $RWadultAmount;
-        $return['RWadult'][$i] = $RWadult;
-        $return['RWchild'][$i] = $RWchild;
-        $return['childamount'][$i] = $childAmount;
-        $return['RWchildAmount'][$i] = $RWchildAmount;
-        $return['general'][$i] = array_unique($generalsupplementType);
-        $return['application'][$i] = array_unique($generalsupplementapplication);
-        $return['ManadultAmount'][$i] = $ManadultAmount;
-        $return['ManchildAmount'][$i] = $ManchildAmount;
-        $return['ManchildAmount'][$i] = $ManchildAmount;
-        $return['Manadultcount'][$i] = $MangeneralsupplementforAdults;
-        $return['Manchildcount'][$i] = $MangeneralsupplementforChilds;
-        $return['mangeneral'][$i] = array_unique($MangeneralsupplementType);
-      }
-      $return['gnlCount'] = array_sum($gsarraySum)+array_sum($mangsarraySum);
-      return $return;
+        $return['gnlCount'] = array_sum($gsarraySum)+array_sum($mangsarraySum);
+        return $return;
     }
     public function Alldiscount($startdate,$enddate,$hotel_id,$room_id,$contract_id,$type) {
       $checkin_date=date_create($startdate);
@@ -1731,6 +1726,104 @@ class DbHandler {
             return $details;
         } else {
             return null;
+        }
+    }
+    public function get_CancellationPolicy_contractConfirm($request,$hotel_id,$contract_id,$room_id) {
+        $refund=array();
+        $stmt = $this->conn->prepare("SELECT * FROM hotel_tbl_contract WHERE contract_id = '".$contract_id."' AND nonRefundable = 1");
+        if($stmt->execute()) {
+            $tmp = $stmt->get_result();
+            while($res = $tmp->fetch_assoc()) {
+                $refund = $res;
+            }
+            $stmt->close();
+        }
+        if (count($refund)!=0) {
+            $data[0]['msg'] = "This booking is Nonrefundable";
+            $data[0]['percentage'] = 100;
+            $data[0]['daysInAdvance'] = 0;
+            $data[0]['application'] = 'NON REFUNDABLE';
+            $data[0]['daysFrom'] = '365';
+            $data[0]['daysTo'] = '0';
+        } else {
+            $stmt = $this->conn->prepare("SELECT * FROM hotel_tbl_hotel_room_type WHERE id = '".$room_id."'");
+            if($stmt->execute()) {
+                $roomType = $stmt->get_result()->fetch_assoc();
+            }
+            $data = array();
+            $checkin_date=date_create($request['check_in']);
+            $checkout_date=date_create($request['check_out']);
+            $no_of_days=date_diff($checkin_date,$checkout_date);
+            $tot_days = $no_of_days->format("%a");
+
+            $start=date_create(date('m/d/Y'));
+            $end=date_create($request['check_in']);
+            $nod=date_diff($start,$end);
+            $tot_days1 = $nod->format("%a");
+
+            for($i = 0; $i < $tot_days; $i++) {
+                $date[$i] = date('Y-m-d', strtotime($request['check_in']. ' + '.$i.'  days'));
+                $stmt = $this->conn->prepare("SELECT * FROM hotel_tbl_cancellationfee WHERE '".$date[$i]."' BETWEEN fromDate AND toDate AND contract_id = '".$contract_id."'  AND hotel_id = '".$hotel_id."' AND daysTo <= '".$tot_days1."' order by daysTo asc");
+                if($stmt->execute()) {
+                    $tmp = $stmt->get_result();
+                    while($res[] = $tmp->fetch_assoc()) {
+                        $CancellationPolicyCheck[$i] = $res;
+                    }
+                    $stmt->close();
+                }
+                if (count($CancellationPolicyCheck[$i])!=0) {
+                    foreach ($CancellationPolicyCheck[$i] as $key => $value) {
+                        $exploderoomType[$key] = explode(",", $value['roomType']);
+                        foreach ($exploderoomType[$key] as $key1 => $value1) {
+                            if ($value1==$roomType['id']) {
+                              if ($value['daysFrom']==0) {
+                                $daysInAdvance = 'your check-in date';
+                              } else if($value['daysFrom']==1) {
+                                $daysInAdvance = 'within 24 hours of your check-in';
+                              } else {
+                                $daysInAdvance = 'within '.$value['daysFrom'].' days of your check-in';
+                              }
+                              $data[$key]['daysFrom'] = $value['daysFrom'];
+                              $data[$key]['daysTo'] = $value['daysTo'];
+                              $data[$key]['percentage'] = $value['cancellationPercentage'];
+                              $data[$key]['application'] = $value['application'];
+                              if ($value['application']=="FIRST NIGHT") {
+                                $data[$key]['msg'] = 'If you cancel '.$daysInAdvance.',you will pay '.$value['cancellationPercentage'].'% of one night stay with supplementary charges no matter the number of stay days.';
+                              } else if ($value['application']=="STAY") {
+                                $data[$key]['msg'] = 'If you cancel '.$daysInAdvance.', you will pay '.$value['cancellationPercentage'].'% of the booking amount.';
+                              } else {
+                                $data[$key]['msg'] = 'If you cancel '.$daysInAdvance.',  Cancellation charge is free .';
+                              }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+      return $data;
+    }
+    public function addCancellationBooking($booking_id,$msg,$percentage,$daysFrom,$daysTo,$application,$room_id="",$contract_id="",$index,$providerid) {
+        $stmt = $this->conn->prepare("insert into hotel_tbl_bookcancellationpolicy(bookingID,room_id,contract_id,roomIndex,daysFrom,daysTo,cancellationPercentage,application,msg,createdDate,createdBy)values('".$booking_id."','".$room_id."','".$contract_id."','".$index."','".$daysFrom."','".$daysTo."','".$percentage."','".$application."','".$msg."','".date('Y-m-d H:i:s')."','".$providerid."')");
+        if($stmt->execute()) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    public function AddPaymentConfirmExtrabed($date,$amount,$bookId,$rooms,$rwamount,$type,$room_id,$contract_id,$index){
+        $stmt = $this->conn->prepare("insert into bookingextrabed(date,amount,rooms,Exrwamount,Type,bookId,room_id,contract_id,roomIndex)values('".$date."','".$amount."','".$rooms."','".$rwamount."','".$type."','".$bookId."','".$room_id."','".$contract_id."','".$index."')");
+        if($stmt->execute()) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    public function bkgeneralSupplementConfirm($gstayDate, $gBookingDate, $generalType, $gadultamount , $gchildamount, $booking_id,$reqadults,$reqChild,$mand,$Rwadult,$Rwchild,$Rwadultamount,$RwchildAmount,$application,$room_id,$contract_id,$index,$providerid) {
+        $stmt = $this->conn->prepare("insert into hotel_tbl_bookGeneralSupplement(bookingID,gstayDate,gBookingDate,generalType,gadultamount,gchildamount,reqadults,reqChild,mandatory,Rwadult,Rwchild,Rwadultamount,RwchildAmount,application,room_id,contract_id,roomIndex,createdDate,createdBy)values('".$booking_id."','".$gstayDate."','".$gBookingDate."','".$generalType."','".$gadultamount."','".$gchildamount."','".$reqadults."','".$reqChild."','".$mand."','".$Rwadult."','".$Rwchild."','".$Rwadultamount."','".$RwchildAmount."','".$application."','".$room_id."','".$contract_id."','".$index."','".date('Y-m-d H:i:s')."','".$providerid."')");
+        if($stmt->execute()) {
+            return true;
+        } else {
+            return false;
         }
     }
 }
