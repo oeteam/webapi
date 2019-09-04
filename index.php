@@ -623,6 +623,88 @@ $app->post('/HotelBook',function($request,$response) {
               'Created_By' => $result['provider_id']
             );
           $booking_id = $db->addBooking($datas);
+          for ($i=0; $i < $searchdet['noRooms']; $i++) { 
+            $IndexSplit = explode("-", $details['roomindex'][$i]);
+            // Cancellation Process start 
+            $Cancellation[$i] = $db->get_CancellationPolicy_contractConfirm($searchdet,$details['hotelcode'],$IndexSplit[0],$IndexSplit[1]);
+            if (count($Cancellation[$i])!=0) {
+              foreach ($Cancellation[$i] as $Cpkey => $Cpvalue) {
+                $st =$db->addCancellationBooking($booking_id['insertid'],$Cpvalue['msg'],$Cpvalue['percentage'],$Cpvalue['daysFrom'],$Cpvalue['daysTo'],$Cpvalue['application'],$IndexSplit[1],$IndexSplit[0],($i+1),$result['provider_id']);
+              }
+            }
+
+            // Cancellation Process end 
+            //  Extrabed process start
+            $ExtrabedAmount[$i] =$db->get_PaymentConfirmextrabedAllotment($searchdet,$details['hotelcode'],$IndexSplit[0],$IndexSplit[1],$i);
+            $amount = array();
+            if ($ExtrabedAmount[$i]['count']!=0) {
+              foreach ($ExtrabedAmount[$i]['date'] as $key => $value){
+                  $date=$value;
+                  $amount[$key]= $ExtrabedAmount[$i]['extrabedAmount'][$key];
+                  
+                  foreach ($ExtrabedAmount[$i]['RwextrabedAmount'][$key] as $Rwexamtarrkey => $Rwexamtarrvalue) {
+                    $RwexamtarrAmount[$Rwexamtarrkey] = implode(",", $Rwexamtarrvalue);
+                  }
+                  $Exrwamount[$key] = implode(",", $RwexamtarrAmount);
+                 
+                  foreach ($ExtrabedAmount[$i]['Exrooms'][$key] as $Rwexroomarrkey => $Rwexroomarrvalue) {
+                    $RwexamtarrRoom[$Rwexroomarrkey] = implode(",", $Rwexroomarrvalue);
+                  }
+                  $Exrooms[$key] = implode(",", $RwexamtarrRoom);
+
+                  foreach ($ExtrabedAmount[$i]['extrabedType'][$key] as $Rwextypearrkey => $Rwextypearrvalue) {
+                    $RwexamtarrType[$Rwextypearrkey] = implode(",", $Rwextypearrvalue);
+                  }
+                  $ExrwType[$key] = implode(",", $RwexamtarrType);
+                  
+                  $InsertExtrabedAmount=$db->AddPaymentConfirmExtrabed($date,$amount[$key],$booking_id['insertid'],$Exrooms[$key],$Exrwamount[$key],$ExrwType[$key],$IndexSplit[1],$IndexSplit[0],($i+1));
+              }
+            }
+            //  Extrabed process end
+            // General Supplement details Add start
+            $gadultamount = array();
+            $tgadultamount = array();
+            $gchildamount = array();
+            $tgchildamount = array();
+            $general[$i] = $db->get_Confirmgeneral_supplement($searchdet,$IndexSplit[0],$IndexSplit[1],($i+1),$details['hotelcode']);
+            if ($general[$i]['gnlCount']!=0) {
+              foreach ($general[$i]['date'] as $key3 => $value3) {
+                foreach ($general[$i]['general'][$key3] as $key4 => $value4) {
+                  $gstayDate = $value3;
+                  $gBookingDate = date('Y-m-d');
+                  $generalType = $value4;
+                  if (isset($general[$i]['adultamount'][$key3][$value4])) {
+                    $gadultamount[$key4] = $general[$i]['adultamount'][$key3][$value4];
+                    if ($searchdet['child']!=0 && isset($general['childamount'][$key3][$value4])) {
+                      $gchildamount[$key4] = $general[$i]['childamount'][$key3][$value4];
+                    } else {
+                      $gchildamount[$key4] = 0;
+                    }
+                    $tgadultamount[] = $general[$i]['adultamount'][$key3][$value4];
+                    $tgchildamount[] = $gchildamount[$key4];
+                    $Rwgadult[$key4] = implode(",", $general[$i]['RWadult'][$key3][$value4]);
+                    if (isset($general[$i]['RWchild'][$key3][$value4])) {
+                      $Rwgchild[$key4] = implode(",", $general[$i]['RWchild'][$key3][$value4]);
+                    } else {
+                      $Rwgchild[$key4] = "";
+                    }
+                    $RwgAdultamount[$key4] = implode(",", $general[$i]['RWadultamount'][$key3][$value4]);
+                    if (isset($general[$i]['RWchildAmount'][$key3][$value4])) {
+                      foreach ($general[$i]['RWchildAmount'][$key3][$value4] as $gscarkey => $gscarvalue) {
+                          $gscarr[] =array_sum($gscarvalue);
+                      }
+                      $RwgChildamount[$key4] = implode(",", $gscarr);
+                    } else {
+                      $RwgChildamount[$key4] = "";
+                    }
+                    $Rwgsapplication[$key4] = $general[$i]['application'][$key3][$key4];
+                    $bkgeneralSupplementConfirm = $db->bkgeneralSupplementConfirm($gstayDate, $gBookingDate, $generalType, $gadultamount[$key4] , $gchildamount[$key4],$booking_id['insertid'],$searchdet['adults'],$searchdet['child'],1,$Rwgadult[$key4],$Rwgchild[$key4],$RwgAdultamount[$key4],$RwgChildamount[$key4],$Rwgsapplication[$key4],$IndexSplit[1],$IndexSplit[0],($i+1),$result['provider_id']);
+                  }
+                }
+              }
+            }
+          // General Supplement details Add end
+          }
           $response['status']['status'] = "success";
           $response['status']['description'] = "Hotel booked successfully";
           $response['status']['bookingId'] = 'HAB0'.$booking_id['insertid'];
