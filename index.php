@@ -96,14 +96,22 @@ $app->post('/AvailableHotelRooms',function($request,$response) {
           } 
           $searchdet = $db->getSearchDetails($details['session_id']);
           $contracts = $db->contractChecking($searchdet,$details['hotelcode']);
-          if ($contracts!=false) {
+          $rooms = array();
+          if (!empty($contracts)) {
             for ($i=0; $i < $searchdet['noRooms']; $i++) { 
-              $rooms[$i] = $db->roomwisepaxdata($details['hotelcode'],$i,$searchdet,$contracts['contract_id']);
+              $roomdet[$i] = $db->roomwisepaxdata($details['hotelcode'],$i,$searchdet,$contracts['contract_id']);
+              if(!empty($roomdet[$i])) {
+                $rooms[$i] = $roomdet[$i];
+              }
             }
           }
-          $response['status']['status'] = "success";
-          for ($i=0; $i < $searchdet['noRooms']; $i++) {
-            $response['status']['result']['room'.($i+1)] = $rooms[$i];
+          if(count($rooms)==$searchdet['noRooms']) {
+            $response['status']['status'] = "success";
+            for ($i=0; $i < $searchdet['noRooms']; $i++) {
+              $response['result']['room'.($i+1)] = $rooms[$i];
+            }
+          } else {
+            $response['status']['status'] = "failed";
           }
         } else {
           $response['status']['status'] = "error";
@@ -154,6 +162,7 @@ $app->post('/BookingReview',function($request,$response) {
           $response['result']['no_of_rooms']= $searchdet['noRooms'];
           $response['result']['no_of_days']=  $tot_days;
           for ($i=0; $i < $searchdet['noRooms']; $i++) { 
+            $data = array();
             $roomindex = explode('-',$details['room'][$i]);
             if(isset($roomindex[1])) {
               $roomid[$i] = $roomindex[1];
@@ -165,8 +174,8 @@ $app->post('/BookingReview',function($request,$response) {
             } else {
                $contractid[$i] = "";
             }
-            $data['cancellation_policy'] = array();
-            // $data['cancellation_policy'] = $db->get_policy_contract($details['hotelcode'],$contractid[$i]);
+            $data['Cancellation_policy'][$i] = $db->get_CancellationPolicy_table($searchdet,$contractid[$i],$roomid[$i],$details['hotelcode']);
+            $data['remarks_and_policies']= $db->get_policy_contract($details['hotelcode'],$contractid[$i]);
             $contractBoardCheck = $db->contractBoardCheck($contractid[$i]);
             // if ($contractBoardCheck['board']=="RO") {
             //   $Breakfast = $db->additionalfoodrequest($details['hotelcode'],$contractid[$i],$roomid[$i],$searchdet,'Breakfast');
@@ -221,18 +230,18 @@ $app->post('/BookingReview',function($request,$response) {
               $result[$j]['roomName'] = $db->roomnameGET($roomid[$i],$details['hotelcode']);
               $FextrabedAmount[$i-1]  = 0;
               $TFextrabedAmount[$i-1]  = 0;
-              $GAamount[$i-1] = 0;
-              $GCamount[$i-1] = 0;
-              $BBAamount[$i-1] = 0;
-              $BBCamount[$i-1] = 0;
-              $LAamount[$i-1] = 0;
-              $LCamount[$i-1] = 0;
-              $DAamount[$i-1] = 0;
-              $DCamount[$i-1] = 0;
-              $TGAamount[$i-1] = 0;
-              $TGCamount[$i-1] = 0;
-              $data['roomname'] =   $result[$j]['roomName'];
-              $data['per-day-amount'] = $result[$j]['amount'];
+              $GAamount[$j-1] = 0;
+              $GCamount[$j-1] = 0;
+              $BBAamount[$j-1] = 0;
+              $BBCamount[$j-1] = 0;
+              $LAamount[$j-1] = 0;
+              $LCamount[$j-1] = 0;
+              $DAamount[$j-1] = 0;
+              $DCamount[$j-1] = 0;
+              $TGAamount[$j-1] = 0;
+              $TGCamount[$j-1] = 0;
+              //$data['roomname'] =   $result[$j]['roomName'];
+              //$data['per-day-amount'] = $result[$j]['amount'];
               $RMdiscount = $db->DateWisediscount(date('Y-m-d' ,strtotime($result[$j]['date'])),$details['hotelcode'],$roomid[$i],$contractid[$i],'Room',date('Y-m-d',strtotime($searchdet['check_in'])),date('Y-m-d',strtotime($searchdet['check_out'])),$discountGet['dis']);
               $RMdiscountval[$i] = $RMdiscount['discount'];
               $GDis = 0;
@@ -247,63 +256,66 @@ $app->post('/BookingReview',function($request,$response) {
               if ($RMdiscount['discount']!=0 && $RMdiscount['Board']!=0) { 
                 $BDis = $RMdiscount['discount'];
               }
+              $data['amount_breakup-room'.($i+1)][$j]['date']= date('d/m/Y' ,strtotime($result[$j]['date']));
+              $data['amount_breakup-room'.($i+1)][$j]['room'] = $result[$j]['roomName'];
+              $data['amount_breakup-room'.($i+1)][$j]['boardname'] = $contractBoardCheck['board'];
               $rmamount = 0;
               $total_markup = 0;
               $roomAmount[$j]  = (($result[$j]['amount']*$total_markup)/100)+$result[$j]['amount']+$rmamount;
               $DisroomAmount[$j] = $roomAmount[$j]-($roomAmount[$j]*$RMdiscount['discount'])/100;
               $WiDisroomAmount[$j] = $roomAmount[$j];
               if ($RMdiscount['discount']!=0) { 
-                $data['roomamount'] = $roomAmount[$j];
+                $data['amount_breakup-room'.($i+1)][$j]['roomamount'] = $roomAmount[$j];
               }
-              $data['discountroomamount'] = $DisroomAmount[$j];
+              $data['amount_breakup-room'.($i+1)][$j]['discountroomamount'] = $DisroomAmount[$j];
               // General Supplement breakup start 
               if($general['gnlCount']!=0) {
                 //General Supplement adult breakup start
                 foreach ($general['date'] as $GAkey => $GAvalue) {
-                  if ($GAvalue==date('d/m/Y' ,strtotime($result[$i]['date']))) {
+                  if ($GAvalue==date('d/m/Y' ,strtotime($result[$j]['date']))) {
                     foreach ($general['general'][$GAkey] as $GSNkey => $GSNvalue) {
                       if (isset($general['RWadultamount'][$GAkey][$GSNvalue])) {
                         $GSAmamount = 0;
                         $total_markup = 0;
-                        $GAamount[$i-1] = ($general['RWadultamount'][$GAkey][$GSNvalue][$RAkey+1]*$total_markup)/100+$general['RWadultamount'][$GAkey][$GSNvalue][$RAkey+1]+$GSAmamount;
-                        $TGAamount[$i-1] += $GAamount[$i-1]-($GAamount[$i-1]*$GDis)/100;
+                        $GAamount[$j-1] = ($general['RWadultamount'][$GAkey][$GSNvalue][$i+1]*$total_markup)/100+$general['RWadultamount'][$GAkey][$GSNvalue][$i+1]+$GSAmamount;
+                        $TGAamount[$j-1] += $GAamount[$j-1]-($GAamount[$j-1]*$GDis)/100;
                         if ($RMdiscount['discount']!=0 && $RMdiscount['General']!=0) { 
-                          $data['generalSupplement']['adult'.$GAkey]['old-price']=$GAamount[$i-1];
+                          $data['generalSupplement']['adult'.$GAkey]['old-price'][]=$GAamount[$j-1];
                         }
-                        $data['generalSupplement']['adult'.$GAkey]['price']=$GAamount[$i-1]-($GAamount[$i-1]*$GDis)/100; 
+                        $data['generalSupplement']['adult'.$GAkey]['price'][]=$GAamount[$j-1]-($GAamount[$j-1]*$GDis)/100; 
                       }
                     }
                   }
                 }
                 //General Supplement child breakup start -->
                 foreach ($general['date'] as $GCkey => $GCvalue) {
-                  if ($GCvalue==date('d/m/Y' ,strtotime($result[$i]['date']))) {
+                  if ($GCvalue==date('d/m/Y' ,strtotime($result[$j]['date']))) {
                     foreach ($general['general'][$GCkey] as $GSNkey => $GSNvalue) {
-                      if (isset($general['RWchildAmount'][$GCkey]) && isset($general['RWchildAmount'][$GCkey][$GSNvalue][$RAkey+1])) {
+                      if (isset($general['RWchildAmount'][$GCkey]) && isset($general['RWchildAmount'][$GCkey][$GSNvalue][$i+1])) {
                         $GSCmamount = 0;
                         $total_markup = 0;
-                        $GCamount[$i-1] = (array_sum($general['RWchildAmount'][$GCkey][$GSNvalue][$RAkey+1])*$total_markup)/100+array_sum($general['RWchildAmount'][$GCkey][$GSNvalue][$RAkey+1])+$GSCmamount;
-                        $TGCamount[$i-1] = $GCamount[$i-1]-($GCamount[$i-1]*$GDis)/100;
+                        $GCamount[$j-1] = (array_sum($general['RWchildAmount'][$GCkey][$GSNvalue][$i+1])*$total_markup)/100+array_sum($general['RWchildAmount'][$GCkey][$GSNvalue][$i+1])+$GSCmamount;
+                        $TGCamount[$j-1] = $GCamount[$j-1]-($GCamount[$j-1]*$GDis)/100;
                         if ($RMdiscount['discount']!=0 && $RMdiscount['General']!=0) { 
-                          $data['generalSupplement']['child'.$GCkey]['old-price']= $GCamount[$i-1];
+                          $data['generalSupplement']['child'.$GCkey]['old-price'][]= $GCamount[$j-1];
                         }
-                        $data['generalSupplement']['child'.$GCkey]['price']=  $GCamount[$i-1]-($GCamount[$i-1]*$GDis)/100;
+                        $data['generalSupplement']['child'.$GCkey]['price'][]=  $GCamount[$j-1]-($GCamount[$j-1]*$GDis)/100;
                       }
                     }
                   }
                 }
               }
               //Extra bed breakup start
-              if (isset($extrabed['date'][$i-1]) && isset($extrabed['RwextrabedAmount'][$i-1][$RAkey])) {
-                foreach ($extrabed['RwextrabedAmount'][$i-1][$RAkey] as $exMkey => $exMvalue) {
+              if (isset($extrabed['date'][$j-1]) && isset($extrabed['RwextrabedAmount'][$j-1][$i])) {
+                foreach ($extrabed['RwextrabedAmount'][$j-1][$i] as $exMkey => $exMvalue) {
                   $EXamount = 0;
                   $total_markup = 0;                          
-                  $FextrabedAmount[$i-1] =  ($extrabed['RwextrabedAmount'][$i-1][$RAkey][$exMkey]*$total_markup)/100+$extrabed['RwextrabedAmount'][$i-1][$RAkey][$exMkey]+$EXamount;          
-                  $TFextrabedAmount[$i-1] += $FextrabedAmount[$i-1]-($FextrabedAmount[$i-1]*$exDis)/100; 
+                  $FextrabedAmount[$j-1] =  ($extrabed['RwextrabedAmount'][$j-1][$i][$exMkey]*$total_markup)/100+$extrabed['RwextrabedAmount'][$j-1][$i][$exMkey]+$EXamount;          
+                  $TFextrabedAmount[$j-1] += $FextrabedAmount[$i-1]-($FextrabedAmount[$j-1]*$exDis)/100; 
                   if ($RMdiscount['discount']!=0 && $RMdiscount['Extrabed']!=0) {   
-                    $data[$extrabed['extrabedType'][$i-1][$RAkey][$exMkey]]['old-price'] = $FextrabedAmount[$i-1];
+                    $data[$extrabed['extrabedType'][$j-1][$i][$exMkey]]['old-price'][] = $FextrabedAmount[$j-1];
                   }
-                  $data[$extrabed['extrabedType'][$i-1][$RAkey][$exMkey]]['price'] = $FextrabedAmount[$i-1]-($FextrabedAmount[$i-1]*$exDis)/100;
+                  $data[$extrabed['extrabedType'][$j-1][$i][$exMkey]]['price'][] = $FextrabedAmount[$j-1]-($FextrabedAmount[$j-1]*$exDis)/100;
                 }
               }
             }
@@ -340,21 +352,21 @@ $app->post('/BookingReview',function($request,$response) {
             }
             
             //print_r($data['cancellation_policy']);exit;
-            if($data['roomname']=="" || $data['per-day-amount']==0 || $data['discountroomamount']==0 || $data['totalroomamount']['price']==0) {
+            if($data['amount_breakup-room'.($i+1)]=="" || $data['totalroomamount']['price']==0) {
               $response['status']['result']['room'.($i+1)]['status'][] = 'Error'; 
               $response['status']['result']['room'.($i+1)]['status']['description'] = 'Invalid Room Combination'; 
             } else {
-              $response['status']['result']['room'.($i+1)]['status'] = 'Success'; 
-              $response['status']['result']['room'.($i+1)] =$data; 
+              $response['result']['room'.($i+1)]['status'] = 'Success'; 
+              $response['result']['room'.($i+1)] =$data; 
             }
              
           }   
           $tax = $db->general_tax($details['hotelcode']);
-          $response['status']['result']['tax'] = $tax.'%';
+          $response['result']['tax'] = $tax.'%';
           $finalAmount = array_sum($total);
           $finalAmount = ($finalAmount*$tax)/100+$finalAmount;
           $grandTotal = ($finalAmount*$tax)/100+$finalAmount;
-          $response['status']['result']['grandtotal'] = $grandTotal; 
+          $response['result']['grandtotal'] = $grandTotal; 
         } else {
             $response['status']['status'] = "error";
             $response['status']['session_error'] = "Session invalid";

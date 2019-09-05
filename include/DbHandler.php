@@ -242,13 +242,15 @@ class DbHandler {
             $tmp = $stmt->get_result();
             $stmt->close();
         }
-        while($ot = $tmp->fetch_assoc()) {
-            $dt[] = $ot;
+        $dt = array();
+        while($ot[] = $tmp->fetch_assoc()) {
+            $dt = $ot;
         }
         foreach ($dt as $key5 => $value5) {
             $contract_id[] =  $value5['contract_id'];
         }
         $count[] =  count($dt);
+        $contracts = array();
         if (count($count)!=0) {
             $array_uniquecon = array_unique($contract_id);
             foreach ($array_uniquecon as $key10 => $value10) {
@@ -262,7 +264,7 @@ class DbHandler {
             }
             return $contracts;
         } else {
-            return false;
+            return $contracts;
         }
     }
     public function roomwisepaxdata($hotel_id,$key,$data,$contract) {
@@ -1825,6 +1827,183 @@ class DbHandler {
         } else {
             return false;
         }
+    }
+    public function get_CancellationPolicy_table($request,$contract_id,$room_id,$hotel_id) {
+        $refund=array();
+        $stmt = $this->conn->prepare("SELECT * FROM hotel_tbl_contract WHERE contract_id = '".$contract_id."' AND nonRefundable = 1");
+        if($stmt->execute()) {
+            $tmp = $stmt->get_result();
+            while($res = $tmp->fetch_assoc()) {
+                $refund = $res;
+            }
+            $stmt->close();
+        }
+        $checkin_date=date_create($request['check_in']);
+        $checkout_date=date_create($request['check_out']);
+        $no_of_days=date_diff($checkin_date,$checkout_date);
+        $tot_days = $no_of_days->format("%a");
+        $disNRFVal = '';
+        $stmt = $this->conn->prepare("SELECT CONCAT(a.room_name,' ',b.Room_Type) as Name FROM hotel_tbl_hotel_room_type a INNER JOIN hotel_tbl_room_type b ON b.id = a.room_type WHERE a.id = '".$room_id."'");
+        if($stmt->execute()) {
+            $roomType = $stmt->get_result()->fetch_assoc();
+            $stmt->close();
+        }
+        for ($i=0; $i < $tot_days ; $i++) {
+            $dateOut = date('Y-m-d', strtotime($request['check_in']. ' + '.$i.'  days'));
+            $chIn = date_create($request['check_in']);
+            $chOut = date_create($request['check_out']);
+            $noOfDays=date_diff($chIn,$chOut);
+            $totalDays = $noOfDays->format("%a");
+            $checkin_date=date_create($dateOut);
+            $checkout_date=date_create(date('Y-m-d'));
+            $no_of_days=date_diff($checkin_date,$checkout_date);
+            $tot_days = $no_of_days->format("%a");
+            $discount = 0;
+            $NRF = 0;
+            $hotelidCheck = array();
+            $contractCheck = array();
+            $roomCheck = array();
+            $BlackoutDateCheck = array();
+            $query=array();
+            $stmt = $this->conn->prepare('SELECT * FROM hoteldiscount WHERE Discount_flag = 1 AND  FIND_IN_SET('.$hotel_id.' ,hotelid) > 0 AND FIND_IN_SET('.$room_id.',room) > 0 AND FIND_IN_SET("'.$contract_id.'",contract) > 0 AND ((Styfrom <= "'.$dateOut.'" AND Styto >= "'.$dateOut.'" AND  BkFrom <= "'.date("Y-m-d").'" AND BkTo >= "'.date("Y-m-d").'") AND Bkbefore < '.$tot_days.' AND discount_type = "MLOS" AND numofnights <= '.$totalDays.') AND discount  = (SELECT MIN(discount) FROM hoteldiscount  WHERE Discount_flag = 1 AND FIND_IN_SET('.$hotel_id.' ,hotelid) > 0 AND FIND_IN_SET('.$room_id.',room) > 0 AND FIND_IN_SET("'.$contract_id.'",contract) > 0 AND (Styfrom <= "'.$dateOut.'" AND Styto >= "'.$dateOut.'" AND  BkFrom <= "'.date("Y-m-d").'" AND BkTo >= "'.date("Y-m-d").'") AND Bkbefore < '.$tot_days.' AND discount_type = "MLOS" AND numofnights <= '.$totalDays.')');
+            if($stmt->execute()) {
+                $tmp = $stmt->get_result();
+                while($res = $tmp->fetch_assoc()) {
+                    $query = $res;
+                }
+                $stmt->close();
+            }
+            if (count($query)==0) {
+                $stmt = $this->conn->prepare('SELECT * FROM hoteldiscount WHERE Discount_flag = 1 AND FIND_IN_SET('.$hotel_id.' ,hotelid) > 0 AND FIND_IN_SET('.$room_id.',room) > 0 AND FIND_IN_SET("'.$contract_id.'",contract) > 0 AND ((Styfrom <= "'.$dateOut.'" AND Styto >= "'.$dateOut.'" AND  BkFrom <= "'.date("Y-m-d").'" AND BkTo >= "'.date("Y-m-d").'") AND Bkbefore < '.$tot_days.' AND discount_type = "") AND discount  = (SELECT MIN(discount) FROM hoteldiscount  WHERE Discount_flag = 1 AND FIND_IN_SET('.$hotel_id.' ,hotelid) > 0 AND FIND_IN_SET('.$room_id.',room) > 0 AND FIND_IN_SET("'.$contract_id.'",contract) > 0 AND (Styfrom <= "'.$dateOut.'" AND Styto >= "'.$dateOut.'" AND  BkFrom <= "'.date("Y-m-d").'" AND BkTo >= "'.date("Y-m-d").'") AND Bkbefore < '.$tot_days.' AND discount_type = "")');
+                    if($stmt->execute()) {
+                        $tmp = $stmt->get_result();
+                        while($res = $tmp->fetch_assoc()) {
+                            $query = $res;
+                        }
+                        $stmt->close();
+                    }
+            }
+            if (count($query)==0) {
+                $stmt = $this->conn->prepare('SELECT * FROM hoteldiscount WHERE Discount_flag = 1 AND FIND_IN_SET('.$hotel_id.' ,hotelid) > 0 AND FIND_IN_SET('.$room_id.',room) > 0 AND FIND_IN_SET("'.$contract_id.'",contract) > 0 AND ((Styfrom <= "'.$dateOut.'" AND Styto >= "'.$dateOut.'" AND  BkFrom <= "'.date("Y-m-d").'" AND BkTo >= "'.date("Y-m-d").'") AND discount_type = "EB") AND discount  = (SELECT MIN(discount) FROM hoteldiscount  WHERE Discount_flag = 1 AND FIND_IN_SET('.$hotel_id.' ,hotelid) > 0 AND FIND_IN_SET('.$room_id.',room) > 0 AND FIND_IN_SET("'.$contract_id.'",contract) > 0 AND (Styfrom <= "'.$dateOut.'" AND Styto >= "'.$dateOut.'" AND  BkFrom <= "'.date("Y-m-d").'" AND BkTo >= "'.date("Y-m-d").'") AND discount_type = "EB")');
+                    if($stmt->execute()) {
+                        $tmp = $stmt->get_result();
+                        while($res = $tmp->fetch_assoc()) {
+                            $query = $res;
+                        }
+                        $stmt->close();
+                    }
+            }
+            if (count($query)==0) {
+                $stmt = $this->conn->prepare('SELECT * FROM hoteldiscount WHERE Discount_flag = 1 AND FIND_IN_SET('.$hotel_id.' ,hotelid) > 0 AND FIND_IN_SET('.$room_id.',room) > 0 AND FIND_IN_SET("'.$contract_id.'",contract) > 0 AND ((Styfrom <= "'.$dateOut.'" AND Styto >= "'.$dateOut.'") AND Bkbefore < '.$tot_days.' AND discount_type = "REB") AND discount  = (SELECT MIN(discount) FROM hoteldiscount  WHERE Discount_flag = 1 AND FIND_IN_SET('.$hotel_id.' ,hotelid) > 0 AND FIND_IN_SET('.$room_id.',room) > 0 AND FIND_IN_SET("'.$contract_id.'",contract) > 0 AND (Styfrom <= "'.$dateOut.'" AND Styto >= "'.$dateOut.'") AND Bkbefore < '.$tot_days.' AND discount_type = "REB")');
+                    if($stmt->execute()) {
+                        $tmp = $stmt->get_result();
+                        while($res = $tmp->fetch_assoc()) {
+                            $query = $res;
+                        }
+                        $stmt->close();
+                    }
+            }
+            if (count($query)!=0) {
+                $BlackoutDate = explode(",", $query['BlackOut']);
+                if($query['BlackOut']!="")  {
+                    foreach ($BlackoutDate as $key0 => $value0) {
+                        if ($value0==$date) {
+                            $BlackoutDateCheck[$key0] = 1;
+                        }
+                    }
+                }
+                if (array_sum($BlackoutDateCheck)==0) {
+                  $discount = $query['discount'];
+                  $NRF = $query['NonRefundable'];
+                }
+            }
+            $return['discount'] = $discount;
+            $return['NRF'] = $NRF;
+            $disNRF[$i] = $return;
+            if ($disNRF[$i]['NRF']==1) {
+              $disNRFVal = $disNRF[$i]['discount'];
+            }
+        }
+        $data[0]['RoomName'] = $roomType['Name'];
+        if (count($refund)!=0) {
+            $data[0]['description'] = "This booking is Nonrefundable";
+            $data[0]['after'] = "";
+            $data[0]['before'] = "";
+            $data[0]['percentage'] = "";
+            $data[0]['application'] = "Nonrefundable";
+            $data[0]['RoomName'] = $roomType['Name'];
+        } else if($disNRFVal!='') {
+            $data[0]['description'] = "This booking is Nonrefundable";
+            $data[0]['after'] = '';
+            $data[0]['before'] = '';
+            $data[0]['percentage'] = "";
+            $data[0]['RoomName'] = $roomType['Name'];
+            $data[0]['application'] = "Nonrefundable";
+        } else {
+            $data = array();
+            $checkin_date=date_create($request['check_in']);
+            $checkout_date=date_create($request['check_out']);
+            $no_of_days=date_diff($checkin_date,$checkout_date);
+            $tot_days = $no_of_days->format("%a");
+            $start=date_create(date('m/d/Y'));
+            $end=date_create($request['check_in']);
+            $nod=date_diff($start,$end);
+            $tot_days1 = $nod->format("%a");
+            for($i = 0; $i < $tot_days; $i++) {
+              $date[$i] = date('Y-m-d', strtotime($request['check_in']. ' + '.$i.'  days'));
+              $CancellationPolicyCheck[$i] = array();
+              $stmt = $this->conn->prepare("SELECT * FROM hotel_tbl_cancellationfee WHERE '".$date[$i]."' BETWEEN fromDate AND toDate AND contract_id = '".$contract_id."'  AND FIND_IN_SET('".$room_id."', IFNULL(roomType,'')) > 0 AND hotel_id = '".$hotel_id."' AND daysTo <= '".$tot_days1."' order by daysFrom desc");
+                    if($stmt->execute()) {
+                        $tmp = $stmt->get_result();
+                        while($res[] = $tmp->fetch_assoc()) {
+                            $CancellationPolicyCheck[$i] = $res;
+                        }
+                        $stmt->close();
+                    }
+              if (count($CancellationPolicyCheck[$i])!=0) {
+                foreach ($CancellationPolicyCheck[$i] as $key => $value) {
+                  $after = date('Y-m-d', strtotime('-'.$value['daysFrom'].' days', strtotime($request['check_in'])));
+                  $before = date('Y-m-d', strtotime('-'.$value['daysTo'].' days', strtotime($request['check_in'])));
+                  if ($after < date('Y-m-d')) {
+                    $data[$key]['after'] = date('d/m/Y');
+                  } else {
+                    $data[$key]['after'] = date('d/m/Y', strtotime('-'.$value['daysFrom'].' days', strtotime($request['check_in'])));
+                  }
+                  if ($before < date('Y-m-d')) {
+                    $data[$key]['before'] = date('d/m/Y');
+                  } else {
+                    $data[$key]['before'] = date('d/m/Y', strtotime('-'.$value['daysTo'].' days', strtotime($request['check_in'])));
+                  }
+                  if ($value['daysFrom']==0) {
+                    $daysInAdvance = 'your check-in date';
+                  } else if($value['daysFrom']==1) {
+                    $daysInAdvance = 'within 24 hours of your check-in';
+                  } else {
+                    $daysInAdvance = 'within '.$value['daysFrom'].' days of your check-in';
+                  }
+                  $data[$key]['percentage'] = $value['cancellationPercentage'];
+                  $data[$key]['application'] = $value['application'];
+                  $data[$key]['RoomName'] = $roomType['Name'];
+                  if ($value['application']=="FIRST NIGHT") {
+                    $data[$key]['description'] = 'If you cancel '.$daysInAdvance.',you will pay '.$value['cancellationPercentage'].'% of one night stay with supplementary charges no matter the number of stay days.';
+                  } else if ($value['application']=="STAY") {
+                      $data[$key]['description'] = 'If you cancel '.$daysInAdvance.', you will pay '.$value['cancellationPercentage'].'% of the booking amount.';
+                  } else {
+                    $data[$key]['description'] = 'If you cancel '.$daysInAdvance.',  Cancellation charge is free .';
+                  }
+                }
+            }
+        }
+        if (count($data)==0) {
+          $data[0]['description'] = "This booking is Nonrefundable";
+          $data[0]['after'] = "";
+          $data[0]['before'] = "";
+          $data[0]['percentage'] = "";
+          $data[0]['application'] = "Nonrefundable";
+          $data[0]['RoomName'] = $roomType[0]->Name;
+        }
+      }
+      return $data;
     }
 }
 ?>
