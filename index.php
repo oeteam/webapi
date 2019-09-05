@@ -161,6 +161,7 @@ $app->post('/BookingReview',function($request,$response) {
           $response['result']['Child']= $searchdet['child'];
           $response['result']['no_of_rooms']= $searchdet['noRooms'];
           $response['result']['no_of_days']=  $tot_days;
+
           for ($i=0; $i < $searchdet['noRooms']; $i++) { 
             $data = array();
             $roomindex = explode('-',$details['room'][$i]);
@@ -174,37 +175,11 @@ $app->post('/BookingReview',function($request,$response) {
             } else {
                $contractid[$i] = "";
             }
+
             $data['Cancellation_policy'][$i] = $db->get_CancellationPolicy_table($searchdet,$contractid[$i],$roomid[$i],$details['hotelcode']);
             $data['remarks_and_policies']= $db->get_policy_contract($details['hotelcode'],$contractid[$i]);
             $contractBoardCheck = $db->contractBoardCheck($contractid[$i]);
-            // if ($contractBoardCheck['board']=="RO") {
-            //   $Breakfast = $db->additionalfoodrequest($details['hotelcode'],$contractid[$i],$roomid[$i],$searchdet,'Breakfast');
-            //   if ($Breakfast!=false) {
-            //     $data['additionalfoodrequest']['board'][] = 'Breakfast';
-            //   }
-            //   $Lunch =  $db->additionalfoodrequest($details['hotelcode'],$contractid[$i],$roomid[$i],$searchdet,'Lunch');
-            //   if ($Lunch!=false) {
-            //     $data['additionalfoodrequest']['board'][] = 'Lunch';
-            //   }
-            //   $Dinner =  $db->additionalfoodrequest($details['hotelcode'],$contractid[$i],$roomid[$i],$searchdet,'Dinner');
-            //   if ($Dinner!=false) {
-            //     $data['additionalfoodrequest']['board'][] = 'Dinner';
-            //   }
-            // } else if ($contractBoardCheck['board']=="BB") {
-            //   $Lunch = $db->additionalfoodrequest($details['hotelcode'],$contractid[$i],$roomid[$i],$searchdet,'Lunch');
-            //   if ($Lunch!=false) {
-            //     $data['additionalfoodrequest']['board'][] = 'Lunch';
-            //   }
-            //   $Dinner = $db->additionalfoodrequest($details['hotelcode'],$contractid[$i],$roomid[$i],$searchdet,'Dinner');
-            //   if ($Dinner!=false) {
-            //     $data['additionalfoodrequest']['board'][] = 'Dinner';
-            //   }
-            // } else if ($contractBoardCheck['board']=="HB") {
-            //   $Lunch = $db->additionalfoodrequest($details['hotelcode'],$contractid[$i],$roomid[$i],$searchdet,'Lunch');
-            //   if ($Lunch!=false) {
-            //     $data['additionalfoodrequest']['board'][] = 'Lunch';
-            //   }
-            // }
+           
             $extrabed = $db->get_PaymentConfirmextrabedAllotment($searchdet,$details['hotelcode'],$contractid[$i],$roomid[$i],$i); 
             $general = $db->get_Confirmgeneral_supplement($searchdet,$contractid[$i],$roomid[$i],$i+1,$details['hotelcode']); 
             // stay and pay dicount start 
@@ -264,6 +239,7 @@ $app->post('/BookingReview',function($request,$response) {
               $roomAmount[$j]  = (($result[$j]['amount']*$total_markup)/100)+$result[$j]['amount']+$rmamount;
               $DisroomAmount[$j] = $roomAmount[$j]-($roomAmount[$j]*$RMdiscount['discount'])/100;
               $WiDisroomAmount[$j] = $roomAmount[$j];
+
               if ($RMdiscount['discount']!=0) { 
                 $data['amount_breakup-room'.($i+1)][$j]['roomamount'] = $roomAmount[$j];
               }
@@ -319,6 +295,7 @@ $app->post('/BookingReview',function($request,$response) {
                 }
               }
             }
+
             $witotal[$i] = array_sum($WiDisroomAmount)+array_sum($TFextrabedAmount)+array_sum($BBAamount)+array_sum($BBCamount)+array_sum($LAamount)+array_sum($LCamount)+array_sum($DAamount)+array_sum($DCamount)+array_sum($TGAamount)+array_sum($TGCamount);  
             $total[$i] = array_sum($DisroomAmount)+array_sum($TFextrabedAmount)+array_sum($BBAamount)+array_sum($BBCamount)+array_sum($LAamount)+array_sum($LCamount)+array_sum($DAamount)+array_sum($DCamount)+array_sum($TGAamount)+array_sum($TGCamount); 
             if ($discountGet['dis']=="true") {
@@ -340,9 +317,12 @@ $app->post('/BookingReview',function($request,$response) {
                 array_splice($DCamount,$Fdays);
               }
             }
+
             $totRmAmt[$i] = array_sum(array_splice($DisroomAmount, 1,$Fdays))+array_sum($TFextrabedAmount)+array_sum($BBAamount)+array_sum($BBCamount)+array_sum($LAamount)+array_sum($LCamount)+array_sum($DAamount)+array_sum($DCamount)+array_sum($TGAamount)+array_sum($TGCamount); 
+
             unset($DisroomAmount);
-            unset($WiDisroomAmount);       
+            unset($WiDisroomAmount);    
+
             if ($discountGet['dis']=="true") {
               $data['totalroomamount']['oldprice'] = $total[$i];
               $data['totalroomamount']['price'] = $totRmAmt[$i];
@@ -353,11 +333,11 @@ $app->post('/BookingReview',function($request,$response) {
             
             //print_r($data['cancellation_policy']);exit;
             if($data['amount_breakup-room'.($i+1)]=="" || $data['totalroomamount']['price']==0) {
-              $response['status']['result']['room'.($i+1)]['status'][] = 'Error'; 
-              $response['status']['result']['room'.($i+1)]['status']['description'] = 'Invalid Room Combination'; 
+              $response['result']['room'.($i+1)]['status'][] = 'Error'; 
+              $response['result']['room'.($i+1)]['status']['description'] = 'Invalid Room Combination'; 
             } else {
-              $response['result']['room'.($i+1)]['status'] = 'Success'; 
-              $response['result']['room'.($i+1)] =$data; 
+              $response['room'.($i+1)]['status'] = 'Success'; 
+              $response['room'.($i+1)] =$data; 
             }
              
           }   
