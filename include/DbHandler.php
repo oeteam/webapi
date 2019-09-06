@@ -2005,5 +2005,65 @@ class DbHandler {
       }
       return $data;
     }
+    public function validateparametersbookingcancel($data) {
+        $response = array();
+        if(!isset($data['booking_id']) || $data['booking_id'] == '') {
+            $response['booking_id_error'] = 'Booking Id is mandatory';
+        }
+        if(empty($response)) {
+            $response['status'] = "success";
+        } else {
+            $response['status'] = "error";
+        }
+        return $response;
+    }
+    public function cancellationrequest($data) {
+        $stmt = $this->conn->prepare("select booking_flag from hotel_tbl_booking where booking_id='".$data['booking_id']."'");
+        if($stmt->execute()) {
+            $result = $stmt->get_result()->fetch_assoc();
+            $stmt->close();
+            if(!empty($result)) {
+                if($result['booking_flag']!=5) {
+                    $stmt = $this->conn->prepare("update hotel_tbl_booking set booking_flag=5 where booking_id='".$data['booking_id']."'");
+                    $stmt->execute();
+                    return "process";
+                } else {
+                    return "send";
+                }
+            } else {
+                return "invalid";
+            }
+        }  
+    }
+    public function validateparametersbookingcancelstatus($data) {
+        $response = array();
+        if(!isset($data['booking_id']) || $data['booking_id'] == '') {
+            $response['booking_id_error'] = 'Booking Id is mandatory';
+        }
+        if(empty($response)) {
+            $response['status'] = "success";
+        } else {
+            $response['status'] = "error";
+        }
+        return $response;
+    }
+    public function cancellationstatus($data) {
+        $stmt = $this->conn->prepare("select booking_flag from hotel_tbl_booking where booking_id='".$data['booking_id']."'");
+        if($stmt->execute()) {
+            $result = $stmt->get_result()->fetch_assoc();
+            $stmt->close();
+            if(!empty($result)) {
+                if($result['booking_flag']==5) {
+                    return "process";
+                } else if($result['booking_flag']==3) {
+                    return "cancelled";
+                } else {
+                    return "notsend";
+                }
+            } else {
+                return "invalid";
+            }
+        }  
+    }
 }
 ?>

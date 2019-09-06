@@ -793,6 +793,67 @@ $app->post('/BookingDetail',function($request,$response) {
     echoResponse($result);
   }
 });
+$app->post('/BookingCancel',function($request,$response) {
+  $response = array();
+  $db = new DbHandler();
+  $log = $db->insertLog($request,'BookingCancel');
+  $result = authenticate_user($request);
+  if($result['success']==true) {
+    // validating post params
+    $validation = $db->validateparametersbookingcancel($request->getParsedBody());
+    if($validation['status']=="success") {
+       $data = $request->getParsedBody();
+       $result = $db->cancellationrequest($data);
+       if($result=='process') {
+          $response['status']['status'] = 'Success';
+          $response['status']['description'] = 'Your request is processing. Will contact you shortly.';
+       } else if ($result=='send') {
+          $response['status']['status'] = 'Failed';
+          $response['status']['description'] = 'Cancellation request already send for this booking';
+       } else {
+          $response['status']['status'] = 'Error';
+          $response['status']['description'] = 'Request failed';
+       }
+       echoResponse($response);
+    } else {
+      echoResponse($validation);
+    }
+  } else {
+    echoResponse($result);
+  }
+});
+$app->post('/BookingCancelStatus',function($request,$response) {
+  $response = array();
+  $db = new DbHandler();
+  $log = $db->insertLog($request,'BookingCancelStatus');
+  $result = authenticate_user($request);
+  if($result['success']==true) {
+    // validating post params
+    $validation = $db->validateparametersbookingcancelstatus($request->getParsedBody());
+    if($validation['status']=="success") {
+       $data = $request->getParsedBody();
+       $result = $db->cancellationstatus($data);
+       if($result=='process') {
+          $response['status']['status'] = 'Success';
+          $response['status']['description'] = 'Your request is in processing.';
+       } else if ($result=='cancelled') {
+          $response['status']['status'] = 'Success';
+          $response['status']['description'] = 'Your booking have been cancelled';
+       } else if ($result=='notsend') {
+          $response['status']['status'] = 'Success';
+          $response['status']['description'] = 'You havent request any cancellation for this booking.';
+       } else {
+          $response['status']['status'] = 'Error';
+          $response['status']['description'] = 'Request failed';
+       }
+       echoResponse($response);
+    } else {
+      echoResponse($validation);
+    }
+  } else {
+    echoResponse($result);
+  }
+});
 function authenticate_user($request) {
   // getting request header
   $username = $request->getHeaderLine('username');
