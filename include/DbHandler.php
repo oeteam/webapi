@@ -821,20 +821,7 @@ class DbHandler {
       if (count($result)!=0) {
         $amount = $result['amount'];
       } else {
-        $stmt = $this->conn->prepare('SELECT price FROM hotel_tbl_hotel_room_type WHERE id ="'.$room_id.'"');
-        if($stmt->execute()) {
-            $tmp = $stmt->get_result();
-            $stmt->close();
-            $result1 = array();
-            while($res = $tmp->fetch_assoc()) {
-                $result1 = $res;
-            }
-        }
-        if (count($result1)!=0) {
-            $amount = $result1['price'];    
-        } else {
-           $amount = 0; 
-        } 
+        $amount = 0; 
       }
       return $amount;
     }
@@ -1600,7 +1587,11 @@ class DbHandler {
         $tmp4 = $OtelseasyHotels->get_result();
         $OtelseasyHotels->close();
       }
-      return $tmp4->fetch_assoc();
+      while($ot = $tmp4->fetch_assoc()) {
+            $result[] = $ot;
+        }
+
+      return $result;
     }
     public function validateparametershotelbook($data) {
         $response = array(); 
@@ -1830,7 +1821,7 @@ class DbHandler {
     }
     public function get_CancellationPolicy_table($request,$contract_id,$room_id,$hotel_id) {
         $refund=array();
-        $stmt = $this->conn->prepare("SELECT * FROM hotel_tbl_contract WHERE contract_id = '".$contract_id."' AND nonRefundable = 1");
+        $stmt = $this->conn->prepare("SELECT id FROM hotel_tbl_contract WHERE contract_id = '".$contract_id."' AND nonRefundable = 1");
         if($stmt->execute()) {
             $tmp = $stmt->get_result();
             while($res = $tmp->fetch_assoc()) {
@@ -1848,16 +1839,9 @@ class DbHandler {
             $roomType = $stmt->get_result()->fetch_assoc();
             $stmt->close();
         }
+        $disNRFVal = array();
         for ($i=0; $i < $tot_days ; $i++) {
             $dateOut = date('Y-m-d', strtotime($request['check_in']. ' + '.$i.'  days'));
-            $chIn = date_create($request['check_in']);
-            $chOut = date_create($request['check_out']);
-            $noOfDays=date_diff($chIn,$chOut);
-            $totalDays = $noOfDays->format("%a");
-            $checkin_date=date_create($dateOut);
-            $checkout_date=date_create(date('Y-m-d'));
-            $no_of_days=date_diff($checkin_date,$checkout_date);
-            $tot_days = $no_of_days->format("%a");
             $discount = 0;
             $NRF = 0;
             $hotelidCheck = array();
@@ -1865,63 +1849,16 @@ class DbHandler {
             $roomCheck = array();
             $BlackoutDateCheck = array();
             $query=array();
-            $stmt = $this->conn->prepare('SELECT * FROM hoteldiscount WHERE Discount_flag = 1 AND  FIND_IN_SET('.$hotel_id.' ,hotelid) > 0 AND FIND_IN_SET('.$room_id.',room) > 0 AND FIND_IN_SET("'.$contract_id.'",contract) > 0 AND ((Styfrom <= "'.$dateOut.'" AND Styto >= "'.$dateOut.'" AND  BkFrom <= "'.date("Y-m-d").'" AND BkTo >= "'.date("Y-m-d").'") AND Bkbefore < '.$tot_days.' AND discount_type = "MLOS" AND numofnights <= '.$totalDays.') AND discount  = (SELECT MIN(discount) FROM hoteldiscount  WHERE Discount_flag = 1 AND FIND_IN_SET('.$hotel_id.' ,hotelid) > 0 AND FIND_IN_SET('.$room_id.',room) > 0 AND FIND_IN_SET("'.$contract_id.'",contract) > 0 AND (Styfrom <= "'.$dateOut.'" AND Styto >= "'.$dateOut.'" AND  BkFrom <= "'.date("Y-m-d").'" AND BkTo >= "'.date("Y-m-d").'") AND Bkbefore < '.$tot_days.' AND discount_type = "MLOS" AND numofnights <= '.$totalDays.')');
+            $stmt = $this->conn->prepare("SELECT * FROM hoteldiscount WHERE Discount_flag = 1 AND FIND_IN_SET('".$dateOut."',BlackOut)=0 AND NonRefundable = 1 AND  FIND_IN_SET(".$hotel_id." ,hotelid) > 0 AND FIND_IN_SET(".$room_id.",room) > 0 AND FIND_IN_SET('".$contract_id."',contract) > 0 AND ((Styfrom <= '".$dateOut."' AND Styto >= '".$dateOut."'  AND  BkFrom <= '".date('Y-m-d')."' AND BkTo >= '".date('Y-m-d')."' AND Bkbefore < DATEDIFF('".$dateOut."','".date('Y-m-d')."') AND numofnights <= ".$tot_days." AND discount_type = 'MLOS') OR (Styfrom <= '".$dateOut."' AND Styto >= '".$dateOut."'  AND  BkFrom <= '".date('Y-m-d')."' AND BkTo >= '".date('Y-m-d')."' AND Bkbefore < DATEDIFF('".$dateOut."','".date('Y-m-d')."')  AND discount_type = '')  OR (Styfrom <= '".$dateOut."' AND Styto >= '".$dateOut."'  AND  BkFrom <= '".date('Y-m-d')."' AND BkTo >= '".date('Y-m-d')."' AND discount_type = 'EB') OR (Styfrom <= '".$dateOut."' AND Styto >= '".$dateOut."'  AND  BkFrom <= '".date('Y-m-d')."' AND BkTo >= '".date('Y-m-d')."' AND Bkbefore < DATEDIFF('".$dateOut."','".date('Y-m-d')."')  AND discount_type = 'REB')) limit 1");
+
+
             if($stmt->execute()) {
                 $tmp = $stmt->get_result();
-                while($res = $tmp->fetch_assoc()) {
-                    $query = $res;
-                }
+                $query = $tmp->fetch_all();
                 $stmt->close();
             }
-            if (count($query)==0) {
-                $stmt = $this->conn->prepare('SELECT * FROM hoteldiscount WHERE Discount_flag = 1 AND FIND_IN_SET('.$hotel_id.' ,hotelid) > 0 AND FIND_IN_SET('.$room_id.',room) > 0 AND FIND_IN_SET("'.$contract_id.'",contract) > 0 AND ((Styfrom <= "'.$dateOut.'" AND Styto >= "'.$dateOut.'" AND  BkFrom <= "'.date("Y-m-d").'" AND BkTo >= "'.date("Y-m-d").'") AND Bkbefore < '.$tot_days.' AND discount_type = "") AND discount  = (SELECT MIN(discount) FROM hoteldiscount  WHERE Discount_flag = 1 AND FIND_IN_SET('.$hotel_id.' ,hotelid) > 0 AND FIND_IN_SET('.$room_id.',room) > 0 AND FIND_IN_SET("'.$contract_id.'",contract) > 0 AND (Styfrom <= "'.$dateOut.'" AND Styto >= "'.$dateOut.'" AND  BkFrom <= "'.date("Y-m-d").'" AND BkTo >= "'.date("Y-m-d").'") AND Bkbefore < '.$tot_days.' AND discount_type = "")');
-                    if($stmt->execute()) {
-                        $tmp = $stmt->get_result();
-                        while($res = $tmp->fetch_assoc()) {
-                            $query = $res;
-                        }
-                        $stmt->close();
-                    }
-            }
-            if (count($query)==0) {
-                $stmt = $this->conn->prepare('SELECT * FROM hoteldiscount WHERE Discount_flag = 1 AND FIND_IN_SET('.$hotel_id.' ,hotelid) > 0 AND FIND_IN_SET('.$room_id.',room) > 0 AND FIND_IN_SET("'.$contract_id.'",contract) > 0 AND ((Styfrom <= "'.$dateOut.'" AND Styto >= "'.$dateOut.'" AND  BkFrom <= "'.date("Y-m-d").'" AND BkTo >= "'.date("Y-m-d").'") AND discount_type = "EB") AND discount  = (SELECT MIN(discount) FROM hoteldiscount  WHERE Discount_flag = 1 AND FIND_IN_SET('.$hotel_id.' ,hotelid) > 0 AND FIND_IN_SET('.$room_id.',room) > 0 AND FIND_IN_SET("'.$contract_id.'",contract) > 0 AND (Styfrom <= "'.$dateOut.'" AND Styto >= "'.$dateOut.'" AND  BkFrom <= "'.date("Y-m-d").'" AND BkTo >= "'.date("Y-m-d").'") AND discount_type = "EB")');
-                    if($stmt->execute()) {
-                        $tmp = $stmt->get_result();
-                        while($res = $tmp->fetch_assoc()) {
-                            $query = $res;
-                        }
-                        $stmt->close();
-                    }
-            }
-            if (count($query)==0) {
-                $stmt = $this->conn->prepare('SELECT * FROM hoteldiscount WHERE Discount_flag = 1 AND FIND_IN_SET('.$hotel_id.' ,hotelid) > 0 AND FIND_IN_SET('.$room_id.',room) > 0 AND FIND_IN_SET("'.$contract_id.'",contract) > 0 AND ((Styfrom <= "'.$dateOut.'" AND Styto >= "'.$dateOut.'") AND Bkbefore < '.$tot_days.' AND discount_type = "REB") AND discount  = (SELECT MIN(discount) FROM hoteldiscount  WHERE Discount_flag = 1 AND FIND_IN_SET('.$hotel_id.' ,hotelid) > 0 AND FIND_IN_SET('.$room_id.',room) > 0 AND FIND_IN_SET("'.$contract_id.'",contract) > 0 AND (Styfrom <= "'.$dateOut.'" AND Styto >= "'.$dateOut.'") AND Bkbefore < '.$tot_days.' AND discount_type = "REB")');
-                    if($stmt->execute()) {
-                        $tmp = $stmt->get_result();
-                        while($res = $tmp->fetch_assoc()) {
-                            $query = $res;
-                        }
-                        $stmt->close();
-                    }
-            }
             if (count($query)!=0) {
-                $BlackoutDate = explode(",", $query['BlackOut']);
-                if($query['BlackOut']!="")  {
-                    foreach ($BlackoutDate as $key0 => $value0) {
-                        if ($value0==$date) {
-                            $BlackoutDateCheck[$key0] = 1;
-                        }
-                    }
-                }
-                if (array_sum($BlackoutDateCheck)==0) {
-                  $discount = $query['discount'];
-                  $NRF = $query['NonRefundable'];
-                }
-            }
-            $return['discount'] = $discount;
-            $return['NRF'] = $NRF;
-            $disNRF[$i] = $return;
-            if ($disNRF[$i]['NRF']==1) {
-              $disNRFVal = $disNRF[$i]['discount'];
+               $disNRFVal[$i] = 1;
             }
         }
         $data[0]['RoomName'] = $roomType['Name'];
@@ -1932,7 +1869,7 @@ class DbHandler {
             $data[0]['percentage'] = "";
             $data[0]['application'] = "Nonrefundable";
             $data[0]['RoomName'] = $roomType['Name'];
-        } else if($disNRFVal!='') {
+        } else if(count($disNRFVal)!=0) {
             $data[0]['description'] = "This booking is Nonrefundable";
             $data[0]['after'] = '';
             $data[0]['before'] = '';
@@ -2000,7 +1937,7 @@ class DbHandler {
           $data[0]['before'] = "";
           $data[0]['percentage'] = "";
           $data[0]['application'] = "Nonrefundable";
-          $data[0]['RoomName'] = $roomType[0]->Name;
+          $data[0]['RoomName'] = $roomType;
         }
       }
       return $data;
