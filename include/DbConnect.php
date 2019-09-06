@@ -11,6 +11,7 @@ class DbConnect {
       if (mysqli_connect_errno()) {
         echo "Failed to connect to Mysql: " . mysqli_connect_error();
       }
+      mysqli_set_charset($this->conn,"utf8");
       return $this->conn;
     }
 }

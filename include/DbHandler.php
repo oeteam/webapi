@@ -1587,7 +1587,11 @@ class DbHandler {
         $tmp4 = $OtelseasyHotels->get_result();
         $OtelseasyHotels->close();
       }
-      return $tmp4->fetch_assoc();
+      while($ot = $tmp4->fetch_assoc()) {
+            $result[] = $ot;
+        }
+
+      return $result;
     }
     public function validateparametershotelbook($data) {
         $response = array(); 
