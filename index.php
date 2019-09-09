@@ -1,4 +1,6 @@
 <?php
+set_time_limit(0);
+ini_set('maxdb_execution_time',900000);
 require_once 'include/DbHandler.php';
 require_once 'include/Utils.php';
 require('vendor/autoload.php');
