@@ -2002,5 +2002,13 @@ class DbHandler {
             }
         }  
     }
+    public function getBoard($id) {
+        $stmt = $this->conn->prepare("select board from hotel_tbl_contract where contract_id='".$id."'");
+        if($stmt->execute()) {
+            $result = $stmt->get_result()->fetch_assoc();
+            $stmt->close();
+            return $result;
+        }  
+    }
 }
 ?>

@@ -393,6 +393,8 @@ $app->post('/HotelBook',function($request,$response) {
             $arrRoomIndex = explode("-", $details['roomindex'][$i]);
             $RoomID[$i] = $arrRoomIndex[1]; 
             $ContractID[$i] = $arrRoomIndex[0]; 
+            $contract_board = $db->getBoard($ContractID[$i]);
+            $board[$i] = $contract_board['board'];
             // Dicount value declaration start
             $discountGet = $db->Alldiscount(date('Y-m-d',strtotime($searchdet['check_in'])),date('Y-m-d',strtotime($searchdet['check_out'])),$details['hotelcode'],$RoomID[$i],$ContractID[$i],'Room');
             $DiscountType[$i] = 'Null';
@@ -581,7 +583,7 @@ $app->post('/HotelBook',function($request,$response) {
               'bk_contact_email' => $details['email'],
               'bk_contact_number' => $details['phoneno'],
               'contract_id' => implode(",", $ContractID),
-              'board' => '',
+              'board' => implode(",", $board),
               'Rwadults' => $Rwadults,
               'Rwchild' => $RwChild,
               'Room1ChildAge' => $reqroom1childAge,
