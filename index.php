@@ -4,7 +4,7 @@ ini_set('maxdb_execution_time',900000);
 require_once 'include/DbHandler.php';
 require_once 'include/Utils.php';
 require('vendor/autoload.php');
-
+error_reporting(0);
 $app = new \Slim\App;
 // //slim application routes
 // if(SLIM_DEBUG){
