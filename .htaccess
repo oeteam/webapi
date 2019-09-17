@@ -7,3 +7,7 @@ RewriteRule ^(.*)$ index.php/$1 [L]
 <FilesMatch ".(eot|ttf|otf|woff)">
     Header set Access-Control-Allow-Origin "*"
 </FilesMatch>
+<IfModule mod_headers.c>
+	Header set Access-Control-Allow-Origin: *
+	Header set Access-Control-Allow-Headers: username,password
+</IfModule>
