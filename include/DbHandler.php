@@ -718,12 +718,13 @@ class DbHandler {
                         $RWadult[$value1['type']][$j] = $j;
                       }
                       if(!empty($request['Room'.$j.'ChildAge'])) {
-                        foreach ($request['Room'.$j.'ChildAge'] as $key44 => $value44) {
+                        $roomchildage = explode(",",$request['Room'.$j.'ChildAge']);
+                        foreach ($roomchildage as $key44 => $value44) {
                             if ($value1['MinChildAge'] < $value44) {
                                 if (round($value1['childAmount'])!=0) {
                                   $childAmount[$value1['type']] = $value1['childAmount'];
                                   $RWchildAmount[$value1['type']][$j][$key44] = $value1['childAmount'];
-                                  $RWchild[$value1->type][$j] = $j;
+                                  $RWchild[$value1['type']][$j] = $j;
                                 }
                             } 
                         }
@@ -1587,9 +1588,10 @@ class DbHandler {
         $tmp4 = $OtelseasyHotels->get_result();
         $OtelseasyHotels->close();
       }
+      $result = array();
       while($ot = $tmp4->fetch_assoc()) {
             $result[] = $ot;
-        }
+      }
 
       return $result;
     }

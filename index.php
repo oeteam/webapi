@@ -4,6 +4,7 @@ ini_set('maxdb_execution_time',900000);
 require_once 'include/DbHandler.php';
 require_once 'include/Utils.php';
 require('vendor/autoload.php');
+use \Firebase\JWT\JWT;
 error_reporting(0);
 $app = new \Slim\App;
 // //slim application routes
@@ -15,7 +16,15 @@ $app = new \Slim\App;
 * route test block
 */
 $app->get('/', function () {
-    echo "Hello World";
+  $token = array(
+      
+          "id" => '1234',
+          "firstname" => 'neethu',
+          "lastname" => 'johnso',
+  );
+  $jwt = JWT::encode($token, 'supersecretkeyyoushouldnotcommittogithub');
+  echo $jwt;
+  //echo "Hello World";
 });
 $app->get('/hotels/{hotel_id}', function($request,$response,$args){
 
