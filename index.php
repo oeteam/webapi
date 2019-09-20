@@ -96,13 +96,14 @@ $app->post('/api/AvailableHotelRooms',function($request,$response) {
   $response = array();
   $db = new DbHandler();
   $log = $db->insertLog($request,'AvailableHotelRooms');
-  $result = authenticate_user($request);
-  if($result['success']==true) {
+  //$result = authenticate_user($request);
+  //if($result['success']==true) {
     // validating post params
     $validation = $db->validateparametersavailablerooms($request->getParsedBody());
     if($validation['status']=="success") {
         $details = $request->getParsedBody();
-        $validate_session = $db->validatesession($details,$result['provider_id']);
+        $token = explode(" ",$request->getHeaderLine('Authorization'));
+        $validate_session = $db->validatesession2($details,$token[1]);
         if($validate_session == "success") {
           $data['view'] = $db->getHotelDetails($details['hotelcode']);
           $hotel_facilities = explode(",",$data['view']['hotel_facilities']); 
@@ -140,9 +141,9 @@ $app->post('/api/AvailableHotelRooms',function($request,$response) {
     } else {
       echoResponse($validation);
     }
-  } else {
-    echoResponse($result);
-  }
+  // } else {
+  //   echoResponse($result);
+  // }
 });
 $app->post('/BookingReview',function($request,$response) {
   $response = array();

@@ -978,6 +978,18 @@ class DbHandler {
             return "error";
         }
     }
+    public function validatesession2($data,$token) {
+        $stmt = $this->conn->prepare("SELECT * FROM api_tbl_search WHERE sessionid = '".$data['session_id']."' and password= '".$token."' and searchDate='".date('Y-m-d')."'");
+        if($stmt->execute()) {
+            $result = $stmt->get_result()->fetch_assoc();
+            $stmt->close();
+        }
+        if (!empty($result)) {
+            return "success";
+        } else {
+            return "error";
+        }
+    }
     public function getHotelList($data) {
       $outData = array();
       $search = '';
