@@ -3,6 +3,7 @@ set_time_limit(0);
 ini_set('maxdb_execution_time',900000);
 require_once 'include/DbHandler.php';
 require_once 'include/Utils.php';
+require_once 'include/middleware.php';
 require('vendor/autoload.php');
 use \Firebase\JWT\JWT;
 error_reporting(0);
@@ -59,6 +60,11 @@ $app->post('/HotelSearch',function($request,$response) {
   $log = $db->insertLog($request,'HotelSearch');
   $result = authenticate_user($request);
   if($result['success']==true) {
+    $token = array(
+          "username" => $request->getHeaderLine('username'),
+          "password" => $request->getHeaderLine('password'),
+    );
+    $jwt = JWT::encode($token, 'supersecretkeyyoushouldnotcommittogithub');
     $session_id = md5(date('YmdHis').$result['username'].$result['provider_id']);
     // validating post params
     $validation = $db->validateparameters($request->getParsedBody());
@@ -67,6 +73,7 @@ $app->post('/HotelSearch',function($request,$response) {
        $checkin_date=date_create($data['check_in']);
        $checkout_date=date_create($data['check_out']);
        $no_of_days=date_diff($checkin_date,$checkout_date);
+       $data['token'] = $jwt;
        $data['nights'] = $no_of_days->format("%a");
        $data['session_id'] = $session_id;
        $data['provider_id'] = $result['provider_id'];
@@ -74,6 +81,7 @@ $app->post('/HotelSearch',function($request,$response) {
        $list = $db->getHotelList($request->getParsedBody());
        $response['status'] = "success";
        $response['description'] = "Hotel Search is Successfull";
+       $response['token'] = $jwt;
        $response['Session ID'] = $session_id;
        $response['result'] = $list;
        echoResponse($response);
@@ -84,7 +92,7 @@ $app->post('/HotelSearch',function($request,$response) {
     echoResponse($result);
   }
 });
-$app->post('/AvailableHotelRooms',function($request,$response) {
+$app->post('/api/AvailableHotelRooms',function($request,$response) {
   $response = array();
   $db = new DbHandler();
   $log = $db->insertLog($request,'AvailableHotelRooms');
@@ -883,5 +891,18 @@ function authenticate_user($request) {
       return $response;
   }
 }
+// function authenticate_jwt($request) {
+//   // getting request header
+//   $token = $request->getHeaderLine('token');
+//   $response = array();
+//   $app = new \Slim\App();
+//   $db = new DbHandler();
+//   // verifying authorization header
+//   if(isset($token) && $token!='') {
+//     $decoded = JWT::decode($token,'supersecretkeyyoushouldnotcommittogithub', array('HS256'));
+//     print_r($decoded);exit;
+//     // validating user
+//   }
+// }
 $app->run();
 ?>
