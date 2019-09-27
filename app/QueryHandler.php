@@ -713,7 +713,7 @@ class QueryHandler {
             }
         }
         if(!isset($data['hotelcode']) || $data['hotelcode'] == '') {
-            $return['hotel_error'] = 'Hotel Code is mandatory';
+            $return['hotelcode'] = 'Hotel Code is mandatory';
         }
         if(empty($return)) {
             $response['status'] = "true";
