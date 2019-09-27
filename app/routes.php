@@ -100,7 +100,6 @@ return function (App $app) {
         $group->post('/HotelSearch',function(Request $request, Response $response, array $args) {
         	$input = $request->getAttribute('decoded_token_data');
         	$query = new QueryHandler($this->get('db'));
-
         	$validation = $query->validateparameters($request->getParsedBody());
         	if ($validation['status']!='true') {
         		$response->getBody()->write(json_encode($validation));
@@ -124,13 +123,50 @@ return function (App $app) {
 
 	    $group->post('/AvailableHotelRooms',function(Request $request, Response $response, array $args) {
         	$input = $request->getAttribute('decoded_token_data');
-        	print_r($input['id']);
-        	exit();
-        	$data = array($input);
-			$payload = json_encode($data);
+        	$query = new QueryHandler($this->get('db'));
+        	$validation = $query->validateparametersavailablerooms($request->getParsedBody());
+        	if ($validation['status']!='true') {
+        		$response->getBody()->write(json_encode($validation));
+        		return $response;
+        	} else {
+				$data = $request->getParsedBody();
+				// $hoteldetails = $query->getHotelDetails($data['hotelcode']);
+	   //        	$hotel_facilities = explode(",",$hoteldetails['hotel_facilities']); 
+	   //        	foreach ($hotel_facilities as $key => $value) {
+	   //          	$hotelfacilities[$key] = $query->hotel_facilities_data($value);
+	   //        	}
+	   //        	$room_facilities = explode(",",$hoteldetails['room_facilities']); 
+	   //        	foreach ($room_facilities as $key => $value) {
+	   //          	$roomfacilities[$key] = $query->room_facilities_data($value);
+	   //          } 
+	          	$contracts = $query->contractChecking($data);
+	          	$rooms = array();
+	          	if (!empty($contracts)) {
+	            	for ($i=0; $i < $data['no_of_rooms']; $i++) { 
+	              		$roomdet[$i] = $query->roomwisepaxdata($i,$data,$contracts['contract_id']);
+	              		if(!empty($roomdet[$i])) {
+	                		$rooms[$i] = $roomdet[$i];
+	              		}
+	            	}
+	          	}
+	          	if(count($rooms)== $data['no_of_rooms']) {
+		    		$data1 = array('status' => true, 'message' => 'Successfull');
+		            for ($i=0; $i < $data['no_of_rooms']; $i++) {
+		              $data1['AvailableHotelRooms']['room'.($i+1)] = $rooms[$i];
+		            }
+				} else {
+					$data1 = array('status' => false, 'message' => 'Failed');
+				}
+				$response->getBody()->write(json_encode($data1));
+        		return $response;
+        	}
+        	// print_r($input['id']);
+        	// exit();
+   //      	$data = array($input);
+			// $payload = json_encode($data);
 
-            $response->getBody()->write($payload);
-        	return $response;
+   //          $response->getBody()->write($payload);
+   //      	return $response;
 	    });
 
     });
